@@ -11,10 +11,10 @@ IMAGES_DIR = MEDIA_DIR / "images"
 DB_PATH = DATA_DIR / "confide.db"
 
 # --- Gemma via Ollama --------------------------------------------------------
-# `gemma4:e4b` (4B effective params) — much faster on CPU than the 9B `latest`
-# tag, with plenty of quality for structured extraction/phrasing on this scope.
+# `gemma4` default tag points to the 8B family in this project setup.
+# This is the quality-first default for demos and feature behavior.
 OLLAMA_HOST = "http://localhost:11434"
-OLLAMA_MODEL = "gemma4:e4b"
+OLLAMA_MODEL = "gemma4"
 LLM_TIMEOUT = 120  # seconds — local models can occasionally stall
 
 # --- faster-whisper (STT) ----------------------------------------------------

@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from core import db, graph, guardian, repo, voice
 from core.config import MEDIA_DIR, OLLAMA_HOST, OLLAMA_MODEL, ROOT
-from features import consent, discharge, handoff, memory, orientation, patient, scribe
+from features import consent, discharge, handoff, memory, orientation, patient, prescription, scribe
 
 WEB_DIST = ROOT / "web" / "dist"
 
@@ -273,7 +273,7 @@ async def transcribe(audio: UploadFile = File(...)):
 
 # --- feature routers ---------------------------------------------------------
 
-for r in (scribe, consent, discharge, handoff, memory, orientation, patient):
+for r in (scribe, consent, discharge, handoff, memory, orientation, patient, prescription):
     app.include_router(r.router)
 
 

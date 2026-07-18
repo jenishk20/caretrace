@@ -169,11 +169,22 @@ app.include_router(orientation.router)
 
 
 # --- static / frontend --------------------------------------------------------------
+# The React app is built with `npm run build` (in web/) into web/dist. FastAPI serves
+# that build directly — no separate frontend server needed for the offline demo.
+
+WEB_DIST = WEB_DIR / "dist"
 
 app.mount("/media", StaticFiles(directory=str(MEDIA_DIR)), name="media")
-app.mount("/static", StaticFiles(directory=str(WEB_DIR)), name="static")
+app.mount("/assets", StaticFiles(directory=str(WEB_DIST / "assets")), name="assets")
 
 
-@app.get("/")
-def index():
-    return FileResponse(str(WEB_DIR / "index.html"))
+@app.get("/favicon.svg", include_in_schema=False)
+def favicon():
+    return FileResponse(str(WEB_DIST / "favicon.svg"))
+
+
+@app.get("/{full_path:path}", include_in_schema=False)
+def spa(full_path: str):
+    # Client-side routing (React Router) — any non-API, non-static path falls back to
+    # index.html and the browser router takes over.
+    return FileResponse(str(WEB_DIST / "index.html"))

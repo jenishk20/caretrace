@@ -11,7 +11,16 @@ const PATIENT_ID_KEY = "do_patient_id";
 export function AppProvider({ children }) {
   const [staff, setStaffState] = useState(() => {
     const raw = localStorage.getItem(STAFF_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Defends against stale/malformed cached shapes surviving a code update (e.g. an
+    // older build that stored {staff_id, name} instead of {id, name}) — a bad cached
+    // value here would otherwise silently break every staff_id-carrying request.
+    if (!parsed || typeof parsed.id !== "number") {
+      localStorage.removeItem(STAFF_KEY);
+      return null;
+    }
+    return parsed;
   });
   const [patientId, setPatientIdState] = useState(() => {
     const raw = localStorage.getItem(PATIENT_ID_KEY);

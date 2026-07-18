@@ -14,6 +14,7 @@ export default function Scribe() {
   const [followUps, setFollowUps] = useState("");
   const [noteId, setNoteId] = useState(null);
   const [notes, setNotes] = useState([]);
+  const [structuring, setStructuring] = useState(false);
 
   async function loadNotes() {
     setNotes(await api.listNotes(patientId));
@@ -43,7 +44,8 @@ export default function Scribe() {
       setError("Record or type a transcript first.");
       return;
     }
-    setStatus("Structuring note (calls the local model, may take a moment)...");
+    setStructuring(true);
+    setStatus("Structuring note — this calls the local model and can take up to a couple of minutes on-device, please wait...");
     try {
       const structured = await api.structureTranscript(transcript);
       setChiefComplaint(structured.chief_complaint || "");
@@ -55,6 +57,8 @@ export default function Scribe() {
     } catch (err) {
       setStatus("");
       setError(err.message);
+    } finally {
+      setStructuring(false);
     }
   }
 
@@ -99,7 +103,9 @@ export default function Scribe() {
           value={transcript}
           onChange={(e) => setTranscript(e.target.value)}
         />
-        <button onClick={structureNote}>Structure note</button>
+        <button onClick={structureNote} disabled={structuring}>
+          {structuring ? "Structuring..." : "Structure note"}
+        </button>
 
         {showForm && (
           <div style={{ marginTop: 16 }}>

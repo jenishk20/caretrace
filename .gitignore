@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+data/*.db
+data/media/audio/*
+data/media/images/*
+!data/media/audio/.gitkeep
+!data/media/images/.gitkeep
+models/*.onnx
+models/*.onnx.json
+.DS_Store

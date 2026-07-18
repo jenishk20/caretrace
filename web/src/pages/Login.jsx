@@ -35,7 +35,7 @@ export default function Login() {
     }
     try {
       const result = await api.login(Number(selectedId), pin);
-      login(result);
+      login({ id: result.staff_id, name: result.name });
       navigate("/patients");
     } catch (err) {
       setLoginError(err.message);

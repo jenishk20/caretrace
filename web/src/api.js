@@ -2,6 +2,25 @@
 // In dev, Vite proxies /api and /media to the FastAPI server (see vite.config.js);
 // in production this is served from the same origin as the built bundle.
 
+// FastAPI validation errors (422) send `detail` as an array of {loc, msg} objects,
+// not a string — format those into something readable instead of "[object Object]".
+function formatErrorDetail(detail) {
+  if (!detail) return undefined;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((e) => {
+        if (e && typeof e === "object") {
+          const field = Array.isArray(e.loc) ? e.loc.filter((p) => p !== "body").join(".") : "";
+          return field ? `${field}: ${e.msg}` : e.msg || JSON.stringify(e);
+        }
+        return String(e);
+      })
+      .join("; ");
+  }
+  return JSON.stringify(detail);
+}
+
 async function request(method, path, { json, form, params } = {}) {
   let url = path;
   if (params) {
@@ -24,7 +43,7 @@ async function request(method, path, { json, form, params } = {}) {
     let detail = res.statusText;
     try {
       const body = await res.json();
-      detail = body.detail || body.error || detail;
+      detail = formatErrorDetail(body.detail) || body.error || detail;
     } catch {
       /* no JSON body */
     }

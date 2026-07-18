@@ -1,62 +1,57 @@
-"""Shift Handoff Generator — synthesizes an SBAR summary from the Scribe pipeline's notes."""
+"""SBAR handoff — auto-writes the nurse-to-nurse handoff from the day's notes and
+graph, leading with the single most-urgent thing."""
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from core import db
-from core.deps import require_patient, require_staff
-from core.llm import ask_gemma_json
-from core.prompts import HANDOFF_SYSTEM
+from core import graph, guardian, repo
+from core.llm import ask_json
 
-router = APIRouter(prefix="/api", tags=["handoff"])
+router = APIRouter(prefix="/api/handoff", tags=["handoff"])
 
 
-class HandoffCreate(BaseModel):
+class HandoffRequest(BaseModel):
     patient_id: int
-    staff_id: int
+    staff_id: int | None = None
 
 
-@router.post("/handoff")
-def generate_handoff(body: HandoffCreate):
-    require_patient(body.patient_id)
-    require_staff(body.staff_id)
+SBAR_SYSTEM = "You write concise SBAR handoffs from recorded facts. No invention. Lead with urgency."
 
-    notes = db.notes_since_last_handoff(body.patient_id)
-    if not notes:
-        raise HTTPException(status_code=422, detail="No notes recorded yet for this patient")
+SBAR_PROMPT = """Write an SBAR handoff for the incoming nurse as JSON:
+{{
+  "priority_note": "the single MOST urgent thing to know right now, one line",
+  "situation": "1-2 sentences: who/why here now",
+  "background": "relevant history: conditions, allergies, meds",
+  "assessment": "current status and concerns",
+  "recommendation": "what the next shift should watch/do"
+}}
 
-    notes_text = "\n\n".join(
-        f"[{n['created_at']}] Chief complaint: {n['chief_complaint']}\n"
-        f"Medications: {', '.join(n['medications']) or 'none'}\n"
-        f"Follow-ups: {', '.join(n['follow_ups']) or 'none'}"
-        for n in notes
+Recorded facts:
+\"\"\"{ctx}\"\"\"
+
+Open Guardian alerts (surface the most urgent in priority_note): {alerts}
+"""
+
+
+@router.post("")
+def generate(body: HandoffRequest):
+    if not repo.get_patient(body.patient_id):
+        raise HTTPException(404, "Patient not found")
+    ctx = graph.context_text(body.patient_id)
+    alerts = guardian.list_alerts(body.patient_id, status="active")
+    alert_txt = "; ".join(f"{a['title']}: {a['message']}" for a in alerts) or "none"
+    data = ask_json(SBAR_PROMPT.format(ctx=ctx, alerts=alert_txt), system=SBAR_SYSTEM)
+    enc_ids = [e["id"] for e in repo.list_encounters(body.patient_id)]
+    handoff = repo.create_handoff(
+        patient_id=body.patient_id, staff_id=body.staff_id,
+        situation=data.get("situation"), background=data.get("background"),
+        assessment=data.get("assessment"), recommendation=data.get("recommendation"),
+        priority_note=data.get("priority_note"), source_encounter_ids=enc_ids,
     )
-
-    result = ask_gemma_json(f"NOTES:\n{notes_text}", system=HANDOFF_SYSTEM)
-    if "_error" in result:
-        raise HTTPException(status_code=502, detail="Gemma did not return a valid SBAR summary")
-
-    return db.create_handoff(
-        patient_id=body.patient_id,
-        staff_id=body.staff_id,
-        situation=result.get("situation", ""),
-        background=result.get("background", ""),
-        assessment=result.get("assessment", ""),
-        recommendation=result.get("recommendation", ""),
-        source_note_ids=[n["id"] for n in notes],
-    )
-
-
-@router.get("/handoff")
-def list_handoffs(patient_id: int):
-    require_patient(patient_id)
-    return db.list_handoffs(patient_id)
-
-
-@router.get("/handoff/{handoff_id}")
-def get_handoff(handoff_id: int):
-    handoff = db.get_handoff(handoff_id)
-    if not handoff:
-        raise HTTPException(status_code=404, detail="Handoff not found")
     return handoff
+
+
+@router.get("")
+def history(patient_id: int):
+    return repo.list_handoffs(patient_id)

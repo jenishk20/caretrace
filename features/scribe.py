@@ -1,93 +1,92 @@
-"""Clinical Scribe — session audio -> transcript -> structured note."""
+"""Clinical Scribe — Confide's "Hear" base.
+
+Capture (voice or typed) -> structured note -> extracted graph nodes -> Guardian
+review. This is the pipeline every proactive beat rides on: the same transcript
+that becomes a note also grows the graph and can trip the Guardian in the same
+call. So the demo can be: doctor dictates a round, and an allergy alert /
+contradiction fires from that single dictation.
+"""
 from __future__ import annotations
 
-from typing import Optional
-
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from core import db, voice
-from core.deps import require_patient, require_staff
-from core.llm import ask_gemma_json
-from core.prompts import SCRIBE_STRUCTURE_SYSTEM
-from core.storage import save_audio_upload
+from core import graph, guardian, repo
+from core.llm import ask_json
 
-router = APIRouter(prefix="/api", tags=["scribe"])
-
-
-@router.post("/voice/transcribe")
-async def transcribe_audio(audio: UploadFile = File(...)):
-    """Generic STT, reused by Translation/Consent/Discharge question capture too."""
-    path = save_audio_upload(audio)
-    text, lang = voice.transcribe(path)
-    return {"transcript": text, "detected_language": lang}
+router = APIRouter(prefix="/api/scribe", tags=["scribe"])
 
 
 class StructureRequest(BaseModel):
     transcript: str
 
 
-@router.post("/scribe/structure")
-def structure_transcript(body: StructureRequest):
-    result = ask_gemma_json(f"TRANSCRIPT:\n{body.transcript}", system=SCRIBE_STRUCTURE_SYSTEM)
-    if "_error" in result:
-        raise HTTPException(status_code=502, detail="Gemma did not return a valid structured note")
+class CaptureRequest(BaseModel):
+    patient_id: int
+    staff_id: int | None = None
+    transcript: str
+    kind: str = "round"        # 'admission' | 'round' | 'note'
+
+
+STRUCTURE_SYSTEM = "You structure clinical dictation. Extract only what is stated. Do not advise."
+
+STRUCTURE_PROMPT = """Turn this clinical dictation into a structured note as JSON:
+{{
+  "chief_complaint": short string or null,
+  "summary": 1-2 sentence plain summary,
+  "medications": [strings, each a med mentioned/ordered],
+  "follow_ups": [strings, each an order/follow-up e.g. "recheck labs in 4 hours"]
+}}
+Dictation:
+\"\"\"{transcript}\"\"\"
+"""
+
+
+@router.post("/structure")
+def structure(body: StructureRequest):
+    """Preview the structured note without persisting (used for the editable draft)."""
+    data = ask_json(STRUCTURE_PROMPT.format(transcript=body.transcript), system=STRUCTURE_SYSTEM)
     return {
-        "chief_complaint": result.get("chief_complaint", ""),
-        "medications": result.get("medications", []),
-        "follow_ups": result.get("follow_ups", []),
+        "chief_complaint": data.get("chief_complaint"),
+        "summary": data.get("summary"),
+        "medications": data.get("medications", []),
+        "follow_ups": data.get("follow_ups", []),
     }
 
 
-class NoteCreate(BaseModel):
-    patient_id: int
-    staff_id: int
-    raw_transcript: Optional[str] = None
-    chief_complaint: Optional[str] = None
-    medications: list[str] = []
-    follow_ups: list[str] = []
-    status: str = "draft"
+@router.post("/capture")
+def capture(body: CaptureRequest):
+    """The full pipeline: structure the note, persist the encounter, extract facts
+    into the graph, and run the Guardian. Returns everything the UI animates:
+    the note, the new nodes, and any alerts raised."""
+    if not repo.get_patient(body.patient_id):
+        raise HTTPException(404, "Patient not found")
 
-
-@router.post("/notes")
-def create_note(body: NoteCreate):
-    require_patient(body.patient_id)
-    require_staff(body.staff_id)
-    return db.create_note(
+    # One Gemma call yields both the structured note and the extracted facts.
+    structured, facts = graph.structure_and_extract(body.transcript)
+    encounter = repo.create_encounter(
         patient_id=body.patient_id,
         staff_id=body.staff_id,
-        raw_transcript=body.raw_transcript,
-        chief_complaint=body.chief_complaint,
-        medications=body.medications,
-        follow_ups=body.follow_ups,
-        status=body.status,
+        kind=body.kind,
+        raw_transcript=body.transcript,
+        chief_complaint=structured["chief_complaint"],
+        summary=structured["summary"],
+        medications=structured["medications"],
+        follow_ups=structured["follow_ups"],
     )
 
+    new_nodes = graph.ingest_facts(body.patient_id, facts, source_kind=body.kind, encounter_id=encounter["id"])
+    alerts = guardian.review_new_nodes(body.patient_id, new_nodes, encounter_id=encounter["id"])
 
-@router.get("/notes")
-def list_notes(patient_id: int):
-    require_patient(patient_id)
-    return db.list_notes(patient_id)
-
-
-@router.get("/notes/{note_id}")
-def get_note(note_id: int):
-    note = db.get_note(note_id)
-    if not note:
-        raise HTTPException(status_code=404, detail="Note not found")
-    return note
+    return {
+        "encounter": encounter,
+        "note": structured,
+        "new_nodes": new_nodes,
+        "alerts": alerts,
+        "graph": graph.graph_snapshot(body.patient_id),
+    }
 
 
-class NoteUpdate(BaseModel):
-    chief_complaint: Optional[str] = None
-    medications: Optional[list[str]] = None
-    follow_ups: Optional[list[str]] = None
-    status: Optional[str] = None
-    raw_transcript: Optional[str] = None
-
-
-@router.put("/notes/{note_id}")
-def update_note(note_id: int, body: NoteUpdate):
-    if not db.get_note(note_id):
-        raise HTTPException(status_code=404, detail="Note not found")
-    return db.update_note(note_id, **body.model_dump(exclude_unset=True))
+@router.get("/encounters")
+def encounters(patient_id: int):
+    return repo.list_encounters(patient_id)

@@ -1,63 +1,49 @@
-"""Bedside Orientation — a gentle spoken reminder of day, location, reason for stay, what's next."""
+"""Bedside Orientation — a gentle spoken reminder for a disoriented inpatient:
+the day, that they're safe, why they're here, what's next. Counters delirium."""
 from __future__ import annotations
 
-from datetime import date
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from core import db, voice
-from core.deps import require_patient, require_staff
-from core.llm import ask_gemma
-from core.prompts import ORIENTATION_SYSTEM
-from core.storage import media_url
+from core import graph, repo, voice
+from core.llm import ask
 
-router = APIRouter(prefix="/api", tags=["orientation"])
+router = APIRouter(prefix="/api/orientation", tags=["orientation"])
 
 
-class OrientationGenerate(BaseModel):
-    staff_id: int
+class OrientRequest(BaseModel):
+    staff_id: int | None = None
 
 
-def _build_context(patient_id: int) -> str:
-    patient = db.get_patient(patient_id)
-    notes = db.list_notes(patient_id)
-    reminders = db.list_reminders(patient_id, status="pending")
+ORIENT_SYSTEM = (
+    "You are Confide speaking gently and slowly to a frightened, disoriented patient at their "
+    "bedside. Warm, simple, reassuring. Short sentences. Tell them the day, that they are safe and "
+    "in the hospital, why they are here, and what happens next. 3-5 sentences. Speak TO them ('you')."
+)
 
-    reason = notes[0]["chief_complaint"] if notes else "a hospital stay"
-    next_up = reminders[0]["description"] if reminders else "resting and letting the care team know if you need anything"
 
-    return (
-        f"Patient name: {patient['name']}\n"
-        f"Today's date: {date.today().isoformat()}\n"
-        f"Room: {patient['room'] or 'their current room'}\n"
-        f"Reason for stay: {reason}\n"
-        f"What's next: {next_up}"
+@router.post("/{patient_id}/generate")
+def generate(patient_id: int, body: OrientRequest):
+    if not repo.get_patient(patient_id):
+        raise HTTPException(404, "Patient not found")
+    ctx = graph.context_text(patient_id)
+    today = datetime.now(timezone.utc).strftime("%A, %B %d")
+    reminders = repo.list_reminders(patient_id, status="pending")
+    whats_next = reminders[0]["description"] if reminders else "your care team will check on you soon"
+    script = ask(
+        f"Today is {today}.\nPatient facts:\n{ctx}\nWhat's next: {whats_next}\n\nSpeak to the patient now:",
+        system=ORIENT_SYSTEM,
     )
+    audio_url = voice.speak(script)
+    session = repo.create_orientation(patient_id, body.staff_id, script, audio_url)
+    return {"script_text": script, "audio_url": audio_url, "id": session["id"]}
 
 
-@router.post("/orientation/{patient_id}/generate")
-def generate_orientation(patient_id: int, body: OrientationGenerate):
-    require_patient(patient_id)
-    require_staff(body.staff_id)
-
-    script_text = ask_gemma(_build_context(patient_id), system=ORIENTATION_SYSTEM)
-    audio_path = voice.speak(script_text)
-
-    db.create_orientation_session(
-        patient_id=patient_id, staff_id=body.staff_id,
-        script_text=script_text, audio_path=str(audio_path),
-    )
-    return {"script_text": script_text, "audio_url": media_url(audio_path)}
-
-
-@router.get("/orientation/{patient_id}/latest")
-def latest_orientation(patient_id: int):
-    require_patient(patient_id)
-    session = db.latest_orientation_session(patient_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="No orientation generated yet for this patient")
-    return {
-        "script_text": session["script_text"],
-        "audio_url": media_url(session["audio_path"]) if session["audio_path"] else None,
-    }
+@router.get("/{patient_id}/latest")
+def latest(patient_id: int):
+    s = repo.latest_orientation(patient_id)
+    if not s:
+        raise HTTPException(404, "No orientation yet")
+    return {"script_text": s["script_text"], "audio_url": s["audio_path"]}

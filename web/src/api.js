@@ -1,51 +1,21 @@
-// Thin fetch wrapper for every backend endpoint. See SPEC.md section 6 for the full list.
-// In dev, Vite proxies /api and /media to the FastAPI server (see vite.config.js);
-// in production this is served from the same origin as the built bundle.
+// Thin fetch wrapper against the local FastAPI backend.
 
-// FastAPI validation errors (422) send `detail` as an array of {loc, msg} objects,
-// not a string — format those into something readable instead of "[object Object]".
-function formatErrorDetail(detail) {
-  if (!detail) return undefined;
-  if (typeof detail === "string") return detail;
-  if (Array.isArray(detail)) {
-    return detail
-      .map((e) => {
-        if (e && typeof e === "object") {
-          const field = Array.isArray(e.loc) ? e.loc.filter((p) => p !== "body").join(".") : "";
-          return field ? `${field}: ${e.msg}` : e.msg || JSON.stringify(e);
-        }
-        return String(e);
-      })
-      .join("; ");
+async function req(path, { method = "GET", body, form } = {}) {
+  const opts = { method, headers: {} };
+  if (form) {
+    opts.body = form;
+  } else if (body !== undefined) {
+    opts.headers["Content-Type"] = "application/json";
+    opts.body = JSON.stringify(body);
   }
-  return JSON.stringify(detail);
-}
-
-async function request(method, path, { json, form, params } = {}) {
-  let url = path;
-  if (params) {
-    const qs = new URLSearchParams(
-      Object.entries(params).filter(([, v]) => v !== undefined && v !== null)
-    ).toString();
-    if (qs) url += `?${qs}`;
-  }
-
-  const opts = { method };
-  if (json !== undefined) {
-    opts.headers = { "Content-Type": "application/json" };
-    opts.body = JSON.stringify(json);
-  } else if (form !== undefined) {
-    opts.body = form; // FormData — browser sets multipart headers itself
-  }
-
-  const res = await fetch(url, opts);
+  const res = await fetch(path, opts);
   if (!res.ok) {
     let detail = res.statusText;
     try {
-      const body = await res.json();
-      detail = formatErrorDetail(body.detail) || body.error || detail;
+      const j = await res.json();
+      detail = j.detail || j.error || detail;
     } catch {
-      /* no JSON body */
+      /* ignore */
     }
     throw new Error(detail);
   }
@@ -54,104 +24,94 @@ async function request(method, path, { json, form, params } = {}) {
 }
 
 export const api = {
-  status: () => request("GET", "/api/status"),
+  status: () => req("/api/status"),
 
-  // staff
-  listStaff: () => request("GET", "/api/staff"),
-  createStaff: (name, pin) => request("POST", "/api/staff", { json: { name, pin } }),
-  login: (staff_id, pin) => request("POST", "/api/auth/login", { json: { staff_id, pin } }),
+  // auth
+  staffLogin: (username, password) =>
+    req("/api/auth/staff/login", { method: "POST", body: { username, password } }),
+  staffRegister: (username, password, name) =>
+    req("/api/auth/staff/register", { method: "POST", body: { username, password, name } }),
+  patientLogin: (username, password) =>
+    req("/api/auth/patient/login", { method: "POST", body: { username, password } }),
 
   // patients
-  listPatients: (params) => request("GET", "/api/patients", { params }),
-  createPatient: (body) => request("POST", "/api/patients", { json: body }),
-  getPatient: (id) => request("GET", `/api/patients/${id}`),
-  updatePatient: (id, body) => request("PUT", `/api/patients/${id}`, { json: body }),
-  dischargePatient: (id, staff_id) =>
-    request("POST", `/api/patients/${id}/discharge`, { json: { staff_id } }),
+  listPatients: (status) =>
+    req(`/api/patients${status ? `?status=${status}` : ""}`),
+  createPatient: (data) => req("/api/patients", { method: "POST", body: data }),
+  getPatient: (id) => req(`/api/patients/${id}`),
+  dischargePatient: (id) => req(`/api/patients/${id}/discharge`, { method: "POST" }),
 
-  // voice
-  transcribe: (audioBlob) => {
+  // graph + guardian
+  getGraph: (id) => req(`/api/patients/${id}/graph`),
+  addNode: (id, node) => req(`/api/patients/${id}/nodes`, { method: "POST", body: node }),
+  completeNode: (nodeId) => req(`/api/nodes/${nodeId}/complete`, { method: "POST" }),
+  listAlerts: (id, status) =>
+    req(`/api/patients/${id}/alerts${status ? `?status=${status}` : ""}`),
+  updateAlert: (alertId, status) =>
+    req(`/api/alerts/${alertId}`, { method: "PUT", body: { status } }),
+  guardianSweep: (id) => req(`/api/patients/${id}/guardian/sweep`, { method: "POST" }),
+
+  // scribe
+  scribeCapture: (data) => req("/api/scribe/capture", { method: "POST", body: data }),
+  scribeEncounters: (id) => req(`/api/scribe/encounters?patient_id=${id}`),
+  transcribe: (blob) => {
     const form = new FormData();
-    form.append("audio", audioBlob, "recording.webm");
-    return request("POST", "/api/voice/transcribe", { form });
+    form.append("audio", blob, "audio.webm");
+    return req("/api/voice/transcribe", { method: "POST", form });
   },
-
-  // scribe / notes
-  structureTranscript: (transcript) =>
-    request("POST", "/api/scribe/structure", { json: { transcript } }),
-  createNote: (body) => request("POST", "/api/notes", { json: body }),
-  listNotes: (patient_id) => request("GET", "/api/notes", { params: { patient_id } }),
-  getNote: (id) => request("GET", `/api/notes/${id}`),
-  updateNote: (id, body) => request("PUT", `/api/notes/${id}`, { json: body }),
-
-  // translate
-  translateTurn: (audioBlob, { patient_id, staff_id, direction, target_language }) => {
-    const form = new FormData();
-    form.append("audio", audioBlob, "turn.webm");
-    form.append("patient_id", patient_id);
-    form.append("staff_id", staff_id);
-    form.append("direction", direction);
-    form.append("target_language", target_language);
-    return request("POST", "/api/translate/turn", { form });
-  },
-  listTranslationLogs: (patient_id) =>
-    request("GET", "/api/translate/logs", { params: { patient_id } }),
 
   // consent
-  createConsentForm: (imageBlob, patient_id, staff_id) => {
+  consentText: (data) => req("/api/consent/forms/text", { method: "POST", body: data }),
+  consentImage: (patientId, staffId, file) => {
     const form = new FormData();
-    form.append("image", imageBlob, "form.jpg");
-    form.append("patient_id", patient_id);
-    form.append("staff_id", staff_id);
-    return request("POST", "/api/consent/forms", { form });
+    form.append("patient_id", patientId);
+    if (staffId) form.append("staff_id", staffId);
+    form.append("image", file);
+    return req("/api/consent/forms", { method: "POST", form });
   },
-  listConsentForms: (patient_id) =>
-    request("GET", "/api/consent/forms", { params: { patient_id } }),
-  getConsentForm: (id) => request("GET", `/api/consent/forms/${id}`),
-  askConsentQuestion: (formId, patient_id, { questionText, audioBlob }) => {
-    const form = new FormData();
-    form.append("patient_id", patient_id);
-    if (audioBlob) form.append("audio", audioBlob, "question.webm");
-    if (questionText) form.append("question_text", questionText);
-    return request("POST", `/api/consent/forms/${formId}/questions`, { form });
-  },
-  listConsentQuestions: (formId) => request("GET", `/api/consent/forms/${formId}/questions`),
+  consentList: (id) => req(`/api/consent/forms?patient_id=${id}`),
+  consentAsk: (docId, patientId, question) =>
+    req(`/api/consent/forms/${docId}/questions`, { method: "POST", body: { patient_id: patientId, question } }),
+  consentQuestions: (docId, patientId) =>
+    req(`/api/consent/forms/${docId}/questions?patient_id=${patientId}`),
 
   // discharge
-  createDischargeDocument: (imageBlob, patient_id, staff_id) => {
+  dischargeText: (data) => req("/api/discharge/documents/text", { method: "POST", body: data }),
+  dischargeImage: (patientId, staffId, file) => {
     const form = new FormData();
-    form.append("image", imageBlob, "papers.jpg");
-    form.append("patient_id", patient_id);
-    form.append("staff_id", staff_id);
-    return request("POST", "/api/discharge/documents", { form });
+    form.append("patient_id", patientId);
+    if (staffId) form.append("staff_id", staffId);
+    form.append("image", file);
+    return req("/api/discharge/documents", { method: "POST", form });
   },
-  listDischargeDocuments: (patient_id) =>
-    request("GET", "/api/discharge/documents", { params: { patient_id } }),
-  getDischargeDocument: (id) => request("GET", `/api/discharge/documents/${id}`),
-  askDischargeQuestion: (docId, patient_id, { questionText, audioBlob }) => {
-    const form = new FormData();
-    form.append("patient_id", patient_id);
-    if (audioBlob) form.append("audio", audioBlob, "question.webm");
-    if (questionText) form.append("question_text", questionText);
-    return request("POST", `/api/discharge/documents/${docId}/questions`, { form });
-  },
-  listDischargeQuestions: (docId) => request("GET", `/api/discharge/documents/${docId}/questions`),
-  createReminder: (docId, description, remind_at) =>
-    request("POST", `/api/discharge/documents/${docId}/reminders`, {
-      json: { description, remind_at },
-    }),
-  listReminders: (patient_id, status) =>
-    request("GET", "/api/reminders", { params: { patient_id, status } }),
-  updateReminder: (id, body) => request("PUT", `/api/reminders/${id}`, { json: body }),
+  dischargeList: (id) => req(`/api/discharge/documents?patient_id=${id}`),
+  dischargeAsk: (docId, patientId, question) =>
+    req(`/api/discharge/documents/${docId}/questions`, { method: "POST", body: { patient_id: patientId, question } }),
+
+  // memory
+  askRoom: (id, question, askedBy = "staff") =>
+    req("/api/memory/ask", { method: "POST", body: { patient_id: id, question, asked_by: askedBy } }),
+  catchMeUp: (id) => req(`/api/memory/catch-me-up/${id}`, { method: "POST" }),
 
   // handoff
-  generateHandoff: (patient_id, staff_id) =>
-    request("POST", "/api/handoff", { json: { patient_id, staff_id } }),
-  listHandoffs: (patient_id) => request("GET", "/api/handoff", { params: { patient_id } }),
-  getHandoff: (id) => request("GET", `/api/handoff/${id}`),
+  generateHandoff: (id, staffId) =>
+    req("/api/handoff", { method: "POST", body: { patient_id: id, staff_id: staffId } }),
+  handoffHistory: (id) => req(`/api/handoff?patient_id=${id}`),
 
   // orientation
-  generateOrientation: (patientId, staff_id) =>
-    request("POST", `/api/orientation/${patientId}/generate`, { json: { staff_id } }),
-  latestOrientation: (patientId) => request("GET", `/api/orientation/${patientId}/latest`),
+  orient: (id, staffId) =>
+    req(`/api/orientation/${id}/generate`, { method: "POST", body: { staff_id: staffId } }),
+
+  // reminders
+  reminders: (id, status) =>
+    req(`/api/patients/${id}/reminders${status ? `?status=${status}` : ""}`),
+  addReminder: (id, data) => req(`/api/patients/${id}/reminders`, { method: "POST", body: data }),
+  updateReminder: (rid, status) => req(`/api/reminders/${rid}`, { method: "PUT", body: { status } }),
+
+  // patient-facing
+  patientChat: (id, message) =>
+    req("/api/patient/chat", { method: "POST", body: { patient_id: id, message } }),
+  patientDebrief: (id) => req(`/api/patient/debrief/${id}`, { method: "POST" }),
+  patientHistory: (id) => req(`/api/patient/history?patient_id=${id}`),
+  patientReminders: (id) => req(`/api/patient/reminders?patient_id=${id}`),
 };

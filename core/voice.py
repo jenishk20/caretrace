@@ -1,13 +1,14 @@
-"""Local speech-to-text (faster-whisper) and text-to-speech (Piper)."""
+"""Local voice: speech-to-text (faster-whisper) and text-to-speech (Piper).
+
+Both are lazy-loaded and fail soft. Every "spoken" interaction in Confide also
+accepts typed text, so a mic/model hiccup never breaks a live demo.
+"""
 from __future__ import annotations
 
+import subprocess
+import uuid
 import wave
-from functools import lru_cache
 from pathlib import Path
-from uuid import uuid4
-
-from faster_whisper import WhisperModel
-from piper import PiperVoice
 
 from core.config import (
     AUDIO_DIR,
@@ -18,41 +19,53 @@ from core.config import (
     WHISPER_MODEL,
 )
 
-
-@lru_cache(maxsize=1)
-def _whisper() -> WhisperModel:
-    return WhisperModel(WHISPER_MODEL, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE_TYPE)
+_whisper = None
 
 
-def transcribe(audio_path: str | Path) -> tuple[str, str]:
-    """Transcribe an audio file. Returns (text, detected_language_code)."""
-    segments, info = _whisper().transcribe(str(audio_path), beam_size=1, vad_filter=True)
+def _get_whisper():
+    global _whisper
+    if _whisper is None:
+        from faster_whisper import WhisperModel
+
+        _whisper = WhisperModel(WHISPER_MODEL, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE_TYPE)
+    return _whisper
+
+
+def transcribe(audio_path: str) -> tuple[str, str]:
+    """Return (text, detected_language). Raises if faster-whisper is unavailable."""
+    model = _get_whisper()
+    segments, info = model.transcribe(audio_path, beam_size=1)
     text = " ".join(seg.text.strip() for seg in segments).strip()
     return text, info.language
 
 
-@lru_cache(maxsize=1)
-def _piper_voice() -> PiperVoice:
+def speak(text: str) -> str | None:
+    """Synthesize `text` to a wav via Piper. Returns a media-relative path, or
+    None if Piper isn't installed (frontend then falls back to browser TTS)."""
     if not PIPER_VOICE.exists():
-        raise FileNotFoundError(
-            f"Piper voice not found at {PIPER_VOICE}. Run: "
-            f"python -m piper.download_voices --download-dir models en_US-lessac-medium"
-        )
-    return PiperVoice.load(str(PIPER_VOICE), config_path=str(PIPER_CONFIG))
+        return None
+    out_name = f"{uuid.uuid4().hex}.wav"
+    out_path = AUDIO_DIR / out_name
+    try:
+        # Prefer the piper python module CLI; fall back to a `piper` binary.
+        for cmd in (
+            ["python", "-m", "piper", "--model", str(PIPER_VOICE), "--config", str(PIPER_CONFIG), "--output_file", str(out_path)],
+            ["piper", "--model", str(PIPER_VOICE), "--config", str(PIPER_CONFIG), "--output_file", str(out_path)],
+        ):
+            try:
+                subprocess.run(cmd, input=text.encode(), capture_output=True, timeout=60, check=True)
+                if out_path.exists() and out_path.stat().st_size > 0:
+                    return f"/media/audio/{out_name}"
+            except (FileNotFoundError, subprocess.CalledProcessError):
+                continue
+    except Exception:
+        pass
+    return None
 
 
-def speak(text: str, out_path: str | Path | None = None) -> Path:
-    """Synthesize text to a WAV file and return its path.
-
-    Only one (English) voice is wired up for this bare-bones pass — see PIPER_VOICE
-    in core/config.py. Non-English playback (Translation's staff->patient direction)
-    will need additional Piper voices dropped into models/ and a lang->voice lookup here.
-    """
-    voice = _piper_voice()
-    if out_path is None:
-        out_path = AUDIO_DIR / f"tts_{uuid4().hex[:8]}.wav"
-    out_path = Path(out_path)
-
-    with wave.open(str(out_path), "wb") as wav_file:
-        voice.synthesize_wav(text, wav_file)
-    return out_path
+def save_upload(data: bytes, suffix: str = ".webm") -> str:
+    """Persist an uploaded audio blob and return its filesystem path."""
+    name = f"{uuid.uuid4().hex}{suffix}"
+    path = AUDIO_DIR / name
+    path.write_bytes(data)
+    return str(path)

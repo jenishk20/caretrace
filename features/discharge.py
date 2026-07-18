@@ -1,132 +1,122 @@
-"""Discharge Navigator — discharge papers -> red flags + grounded Q&A -> reminders."""
+"""Discharge Navigator — explains the discharge sheet in plain language, extracts a
+red-flag symptom list, answers grounded questions, and (crucially) checks any
+symptom the patient mentions against that red-flag list, flagging urgency. Also
+turns the prescription into reminders."""
 from __future__ import annotations
-
-import json
-from typing import Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
-from core import db, vision, voice
-from core.deps import require_patient, require_staff
-from core.llm import ask_gemma_json
-from core.prompts import DISCHARGE_QA_SYSTEM, DISCHARGE_REDFLAGS_SYSTEM
-from core.storage import save_audio_upload, save_image_upload
+from core import repo, vision
+from core.llm import ask, ask_json
 
-router = APIRouter(prefix="/api", tags=["discharge"])
+router = APIRouter(prefix="/api/discharge", tags=["discharge"])
 
 
-@router.post("/discharge/documents")
-async def create_discharge_document(
-    patient_id: int = Form(...),
-    staff_id: int = Form(...),
-    image: UploadFile = File(...),
+EXPLAIN_SYSTEM = "You explain discharge instructions to a patient going home. Warm, plain, concrete."
+
+EXPLAIN_PROMPT = """A patient is going home with this discharge sheet. Return JSON:
+{{
+  "explanation": "4-6 short plain sentences: what happened, wound/activity care, when they can shower, key do's and don'ts.",
+  "red_flags": [{{"symptom": "short symptom name", "description": "why it's urgent / what to do"}}],
+  "medications": [{{"name": "drug", "schedule": "e.g. every 8 hours for 7 days"}}],
+  "suggested_questions": ["3 things a patient would want to ask"]
+}}
+Discharge sheet:
+\"\"\"{ocr_text}\"\"\"
+"""
+
+ANSWER_SYSTEM = "You answer a patient's question grounded ONLY in their discharge sheet."
+
+ANSWER_PROMPT = """Discharge sheet:
+\"\"\"{ocr_text}\"\"\"
+
+Red-flag symptoms on this sheet: {red_flags}
+
+Patient's question or reported symptom: {question}
+
+Return JSON:
+{{
+  "answer": "1-3 calm, plain sentences grounded in the sheet.",
+  "is_red_flag": true if the patient's message matches or resembles one of the red-flag symptoms above, else false,
+  "urgency": "one short line ONLY if is_red_flag is true, telling them what to do now (e.g. 'This is urgent — call your care team or go to the ER.'), else null"
+}}
+"""
+
+
+class TextForm(BaseModel):
+    patient_id: int
+    staff_id: int | None = None
+    ocr_text: str
+
+
+class QuestionRequest(BaseModel):
+    patient_id: int
+    question: str
+
+
+def _build(patient_id, staff_id, ocr_text):
+    data = ask_json(EXPLAIN_PROMPT.format(ocr_text=ocr_text), system=EXPLAIN_SYSTEM)
+    doc = repo.create_document(
+        patient_id=patient_id, staff_id=staff_id, kind="discharge", ocr_text=ocr_text,
+        explanation=data.get("explanation"), red_flags=data.get("red_flags", []),
+        suggested_questions=data.get("suggested_questions", []),
+    )
+    # Turn prescriptions into pending reminders that "leave with the patient".
+    for med in data.get("medications", []):
+        if isinstance(med, dict) and med.get("name"):
+            repo.create_reminder(
+                patient_id, description=f"Take {med['name']}", medication=med["name"],
+                schedule_text=med.get("schedule"),
+            )
+    doc["medications"] = data.get("medications", [])
+    return doc
+
+
+@router.post("/documents")
+async def create_doc(
+    patient_id: int = Form(...), staff_id: int | None = Form(None), image: UploadFile = File(...),
 ):
-    require_patient(patient_id)
-    require_staff(staff_id)
-
-    image_path = save_image_upload(image)
-    ocr_text = vision.ocr(str(image_path))
-
-    result = ask_gemma_json(f"DISCHARGE PAPERS TEXT:\n{ocr_text}", system=DISCHARGE_REDFLAGS_SYSTEM)
-    if "_error" in result:
-        raise HTTPException(status_code=502, detail="Gemma did not return valid red flags")
-
-    return db.create_discharge_document(
-        patient_id=patient_id,
-        staff_id=staff_id,
-        image_path=str(image_path),
-        ocr_text=ocr_text,
-        red_flags=result.get("red_flags", []),
-    )
+    if not repo.get_patient(patient_id):
+        raise HTTPException(404, "Patient not found")
+    data = await image.read()
+    path = vision.save_image(data, suffix="." + (image.filename or "png").split(".")[-1])
+    ocr_text = vision.ocr(path)
+    doc = _build(patient_id, staff_id, ocr_text)
+    doc["image_path"] = path
+    return doc
 
 
-@router.get("/discharge/documents")
-def list_discharge_documents(patient_id: int):
-    require_patient(patient_id)
-    return db.list_discharge_documents(patient_id)
+@router.post("/documents/text")
+def create_doc_text(body: TextForm):
+    if not repo.get_patient(body.patient_id):
+        raise HTTPException(404, "Patient not found")
+    return _build(body.patient_id, body.staff_id, body.ocr_text)
 
 
-@router.get("/discharge/documents/{doc_id}")
-def get_discharge_document(doc_id: int):
-    doc = db.get_discharge_document(doc_id)
+@router.get("/documents")
+def list_docs(patient_id: int):
+    return repo.list_documents(patient_id, kind="discharge")
+
+
+@router.post("/documents/{doc_id}/questions")
+def ask_question(doc_id: int, body: QuestionRequest):
+    doc = repo.get_document(doc_id)
     if not doc:
-        raise HTTPException(status_code=404, detail="Discharge document not found")
-    return {**doc, "qa_log": db.list_discharge_qa(doc_id)}
-
-
-@router.post("/discharge/documents/{doc_id}/questions")
-async def ask_discharge_question(
-    doc_id: int,
-    patient_id: int = Form(...),
-    question_text: Optional[str] = Form(None),
-    audio: Optional[UploadFile] = File(None),
-):
-    doc = db.get_discharge_document(doc_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Discharge document not found")
-
-    if audio is not None:
-        path = save_audio_upload(audio)
-        question_text, _lang = voice.transcribe(path)
-    if not question_text:
-        raise HTTPException(status_code=422, detail="Provide question_text or an audio recording")
-
-    result = ask_gemma_json(
-        f"DISCHARGE PAPERS TEXT:\n{doc['ocr_text']}\n\n"
-        f"KNOWN RED FLAGS:\n{json.dumps(doc['red_flags'])}\n\n"
-        f"PATIENT QUESTION: {question_text}",
-        system=DISCHARGE_QA_SYSTEM,
+        raise HTTPException(404, "Document not found")
+    red_flags = ", ".join(rf.get("symptom", "") for rf in doc.get("red_flags", []))
+    data = ask_json(
+        ANSWER_PROMPT.format(ocr_text=doc["ocr_text"], red_flags=red_flags, question=body.question),
+        system=ANSWER_SYSTEM,
     )
-    if "_error" in result:
-        raise HTTPException(status_code=502, detail="Gemma did not return a valid answer")
-
-    return db.create_discharge_qa(
-        discharge_document_id=doc_id,
-        patient_id=patient_id,
-        question_text=question_text,
-        answer_text=result.get("answer", ""),
-        is_red_flag=bool(result.get("is_red_flag", False)),
-    )
+    answer = data.get("answer", "")
+    is_red_flag = bool(data.get("is_red_flag"))
+    urgency = data.get("urgency")
+    repo.log_qa(body.patient_id, "discharge", body.question, answer, context_id=doc_id,
+                is_red_flag=is_red_flag, asked_by="patient")
+    return {"question": body.question, "answer": answer, "is_red_flag": is_red_flag, "urgency": urgency}
 
 
-@router.get("/discharge/documents/{doc_id}/questions")
-def list_discharge_questions(doc_id: int):
-    if not db.get_discharge_document(doc_id):
-        raise HTTPException(status_code=404, detail="Discharge document not found")
-    return db.list_discharge_qa(doc_id)
-
-
-class ReminderCreateBody(BaseModel):
-    description: str
-    remind_at: str
-
-
-class ReminderUpdateBody(BaseModel):
-    status: Optional[str] = None
-    remind_at: Optional[str] = None
-    description: Optional[str] = None
-
-
-@router.post("/discharge/documents/{doc_id}/reminders")
-def create_reminder(doc_id: int, body: ReminderCreateBody):
-    doc = db.get_discharge_document(doc_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Discharge document not found")
-    return db.create_reminder(
-        patient_id=doc["patient_id"],
-        description=body.description,
-        remind_at=body.remind_at,
-        discharge_document_id=doc_id,
-    )
-
-
-@router.get("/reminders")
-def list_reminders(patient_id: int, status: Optional[str] = None):
-    require_patient(patient_id)
-    return db.list_reminders(patient_id, status=status)
-
-
-@router.put("/reminders/{reminder_id}")
-def update_reminder(reminder_id: int, body: ReminderUpdateBody):
-    return db.update_reminder(reminder_id, **body.model_dump(exclude_unset=True))
+@router.get("/documents/{doc_id}/questions")
+def list_questions(doc_id: int, patient_id: int):
+    return repo.list_qa(patient_id, context_kind="discharge", context_id=doc_id)

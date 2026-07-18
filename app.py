@@ -1,42 +1,35 @@
-"""Doctor Offline — FastAPI: routes + orchestration."""
+"""Confide — FastAPI app: auth, patients, graph, Guardian, and feature routers.
+
+Everything is local: SQLite for memory, Gemma via Ollama for language, faster-whisper
++ Piper for voice. Nothing leaves the device.
+"""
 from __future__ import annotations
 
 import socket
-from typing import Optional
 
-import httpx
-import ollama
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from core import db
+from core import db, graph, guardian, repo, voice
 from core.config import MEDIA_DIR, OLLAMA_HOST, OLLAMA_MODEL, ROOT
-from core.deps import require_staff
-from features import consent, discharge, handoff, orientation, scribe, translate
+from features import consent, discharge, handoff, memory, orientation, patient, scribe
 
-WEB_DIR = ROOT / "web"
+WEB_DIST = ROOT / "web" / "dist"
 
-app = FastAPI(title="Doctor Offline")
+app = FastAPI(title="Confide")
 
 
 @app.on_event("startup")
-def _startup() -> None:
+def _startup():
     db.init_db()
-
-
-@app.exception_handler(httpx.TimeoutException)
-def _ollama_timeout_handler(request: Request, exc: httpx.TimeoutException):
-    return JSONResponse(
-        status_code=504,
-        content={"error": "Gemma did not respond in time. Try again — a local model can occasionally stall."},
-    )
+    _ensure_seed()
 
 
 # --- status ------------------------------------------------------------------
 
-def _network_reachable(timeout: float = 0.5) -> bool:
+def _network_reachable(timeout: float = 0.4) -> bool:
     try:
         socket.create_connection(("8.8.8.8", 53), timeout=timeout).close()
         return True
@@ -46,6 +39,7 @@ def _network_reachable(timeout: float = 0.5) -> bool:
 
 def _ollama_reachable() -> bool:
     try:
+        import ollama
         ollama.Client(host=OLLAMA_HOST).list()
         return True
     except Exception:
@@ -53,7 +47,7 @@ def _ollama_reachable() -> bool:
 
 
 @app.get("/api/status")
-def api_status():
+def status():
     return {
         "network_reachable": _network_reachable(),
         "ollama_reachable": _ollama_reachable(),
@@ -61,130 +55,241 @@ def api_status():
     }
 
 
-# --- staff ---------------------------------------------------------------------
+# --- auth --------------------------------------------------------------------
 
-class StaffCreate(BaseModel):
+class StaffLogin(BaseModel):
+    username: str
+    password: str
+
+
+class StaffRegister(BaseModel):
+    username: str
+    password: str
     name: str
-    pin: str
 
 
-class LoginRequest(BaseModel):
-    staff_id: int
-    pin: str
+class PatientLogin(BaseModel):
+    username: str
+    password: str
 
 
-@app.get("/api/staff")
-def api_list_staff():
-    return db.list_staff()
+@app.post("/api/auth/staff/register")
+def staff_register(body: StaffRegister):
+    if repo.staff_by_username(body.username):
+        raise HTTPException(400, "Username taken")
+    s = repo.create_staff(body.username, body.password, body.name)
+    return {"staff_id": s["id"], "name": s["name"], "username": s["username"]}
 
 
-@app.post("/api/staff")
-def api_create_staff(body: StaffCreate):
-    return db.create_staff(body.name, body.pin)
+@app.post("/api/auth/staff/login")
+def staff_login(body: StaffLogin):
+    s = repo.staff_by_username(body.username)
+    if not s or not db.verify_password(body.password, s["password_hash"]):
+        raise HTTPException(401, "Invalid username or password")
+    return {"staff_id": s["id"], "name": s["name"], "username": s["username"], "role": s["role"]}
 
 
-@app.post("/api/auth/login")
-def api_login(body: LoginRequest):
-    staff = db.get_staff(body.staff_id)
-    if not staff or not db.verify_pin(body.pin, staff["pin_hash"]):
-        raise HTTPException(status_code=401, detail="Invalid staff or PIN")
-    return {"staff_id": staff["id"], "name": staff["name"]}
+@app.post("/api/auth/patient/login")
+def patient_login(body: PatientLogin):
+    p = repo.patient_by_username(body.username)
+    if not p or not p.get("password_hash") or not db.verify_password(body.password, p["password_hash"]):
+        raise HTTPException(401, "Invalid username or password")
+    return {"patient_id": p["id"], "name": p["name"]}
 
 
-# --- patients --------------------------------------------------------------------
+# --- patients ----------------------------------------------------------------
 
 class PatientCreate(BaseModel):
     name: str
     staff_id: int
-    mrn: Optional[str] = None
-    date_of_birth: Optional[str] = None
+    mrn: str | None = None
+    date_of_birth: str | None = None
+    age: int | None = None
+    room: str | None = None
+    reason_for_visit: str | None = None
     primary_language: str = "en"
-    room: Optional[str] = None
-    known_allergies: Optional[str] = None
-
-
-class PatientUpdate(BaseModel):
-    name: Optional[str] = None
-    mrn: Optional[str] = None
-    date_of_birth: Optional[str] = None
-    primary_language: Optional[str] = None
-    room: Optional[str] = None
-    known_allergies: Optional[str] = None
-
-
-class DischargeRequest(BaseModel):
-    staff_id: int
+    username: str | None = None
+    password: str | None = None
+    # optional admission facts, seeded straight into the graph
+    known_allergies: list[str] | None = None
+    current_medications: list[str] | None = None
 
 
 @app.get("/api/patients")
-def api_list_patients(status: Optional[str] = None, search: Optional[str] = None):
-    return db.list_patients(status=status, search=search)
+def list_patients(status: str | None = None, search: str | None = None):
+    return repo.list_patients(status=status, search=search)
 
 
 @app.post("/api/patients")
-def api_create_patient(body: PatientCreate):
-    require_staff(body.staff_id)
-    return db.create_patient(
-        name=body.name,
-        staff_id=body.staff_id,
-        mrn=body.mrn,
-        date_of_birth=body.date_of_birth,
-        primary_language=body.primary_language,
-        room=body.room,
-        known_allergies=body.known_allergies,
+def create_patient(body: PatientCreate):
+    if not repo.get_staff(body.staff_id):
+        raise HTTPException(404, "Staff not found")
+    if body.username and repo.patient_by_username(body.username):
+        raise HTTPException(400, "Patient username taken")
+    p = repo.create_patient(
+        name=body.name, staff_id=body.staff_id, mrn=body.mrn, date_of_birth=body.date_of_birth,
+        age=body.age, room=body.room, reason_for_visit=body.reason_for_visit,
+        primary_language=body.primary_language, username=body.username, password=body.password,
     )
+    # Seed admission facts as graph nodes (and run Guardian, so an admission-time
+    # allergy/med conflict is caught immediately).
+    from core import curated
+    new_nodes = []
+    for allergy in body.known_allergies or []:
+        new_nodes.append(graph.add_node(
+            p["id"], "allergy", allergy, category=curated.category_for_drug(allergy),
+            source_kind="admission"))
+    for med in body.current_medications or []:
+        new_nodes.append(graph.add_node(
+            p["id"], "medication", med, category=curated.category_for_drug(med),
+            source_kind="admission"))
+    if body.reason_for_visit:
+        new_nodes.append(graph.add_node(p["id"], "symptom", body.reason_for_visit, source_kind="admission"))
+    guardian.review_new_nodes(p["id"], new_nodes)
+    return p
 
 
 @app.get("/api/patients/{patient_id}")
-def api_get_patient(patient_id: int):
-    patient = db.get_patient(patient_id)
-    if not patient:
-        raise HTTPException(status_code=404, detail="Patient not found")
-    return patient
-
-
-@app.put("/api/patients/{patient_id}")
-def api_update_patient(patient_id: int, body: PatientUpdate):
-    if not db.get_patient(patient_id):
-        raise HTTPException(status_code=404, detail="Patient not found")
-    return db.update_patient(patient_id, **body.model_dump(exclude_unset=True))
+def get_patient(patient_id: int):
+    p = repo.get_patient(patient_id)
+    if not p:
+        raise HTTPException(404, "Patient not found")
+    return p
 
 
 @app.post("/api/patients/{patient_id}/discharge")
-def api_discharge_patient(patient_id: int, body: DischargeRequest):
-    require_staff(body.staff_id)
-    if not db.get_patient(patient_id):
-        raise HTTPException(status_code=404, detail="Patient not found")
-    return db.discharge_patient(patient_id)
+def discharge_patient(patient_id: int):
+    if not repo.get_patient(patient_id):
+        raise HTTPException(404, "Patient not found")
+    return repo.discharge_patient(patient_id)
 
 
-# --- feature routers ----------------------------------------------------------------
+# --- graph + guardian --------------------------------------------------------
 
-app.include_router(scribe.router)
-app.include_router(translate.router)
-app.include_router(consent.router)
-app.include_router(discharge.router)
-app.include_router(handoff.router)
-app.include_router(orientation.router)
+@app.get("/api/patients/{patient_id}/graph")
+def get_graph(patient_id: int):
+    if not repo.get_patient(patient_id):
+        raise HTTPException(404, "Patient not found")
+    return graph.graph_snapshot(patient_id)
 
 
-# --- static / frontend --------------------------------------------------------------
-# The React app is built with `npm run build` (in web/) into web/dist. FastAPI serves
-# that build directly — no separate frontend server needed for the offline demo.
+class NodeCreate(BaseModel):
+    ntype: str
+    label: str
+    category: str | None = None
+    polarity: str = "asserted"
+    detail: str | None = None
 
-WEB_DIST = WEB_DIR / "dist"
+
+@app.post("/api/patients/{patient_id}/nodes")
+def add_node(patient_id: int, body: NodeCreate):
+    """Manually add a fact (also runs the Guardian on it)."""
+    if not repo.get_patient(patient_id):
+        raise HTTPException(404, "Patient not found")
+    from core import curated
+    cat = body.category or curated.category_for_drug(body.label)
+    node = graph.add_node(patient_id, body.ntype, body.label, category=cat,
+                          polarity=body.polarity, detail=body.detail, source_kind="manual")
+    alerts = guardian.review_new_nodes(patient_id, [node])
+    return {"node": node, "alerts": alerts}
+
+
+@app.post("/api/nodes/{node_id}/complete")
+def complete_node(node_id: int):
+    graph.set_node_completed(node_id)
+    return {"ok": True}
+
+
+@app.get("/api/patients/{patient_id}/alerts")
+def list_alerts(patient_id: int, status: str | None = None):
+    return guardian.list_alerts(patient_id, status=status)
+
+
+class AlertUpdate(BaseModel):
+    status: str
+
+
+@app.put("/api/alerts/{alert_id}")
+def update_alert(alert_id: int, body: AlertUpdate):
+    return guardian.update_alert(alert_id, body.status)
+
+
+@app.post("/api/patients/{patient_id}/guardian/sweep")
+def guardian_sweep(patient_id: int):
+    """Run the forgotten-order sweep on demand (the 'end encounter' safety net)."""
+    if not repo.get_patient(patient_id):
+        raise HTTPException(404, "Patient not found")
+    return {"alerts": guardian.sweep_forgotten_orders(patient_id)}
+
+
+# --- reminders ---------------------------------------------------------------
+
+class ReminderCreate(BaseModel):
+    description: str
+    medication: str | None = None
+    schedule_text: str | None = None
+
+
+@app.get("/api/patients/{patient_id}/reminders")
+def list_reminders(patient_id: int, status: str | None = None):
+    return repo.list_reminders(patient_id, status=status)
+
+
+@app.post("/api/patients/{patient_id}/reminders")
+def create_reminder(patient_id: int, body: ReminderCreate):
+    return repo.create_reminder(patient_id, body.description, body.medication, body.schedule_text)
+
+
+class ReminderUpdate(BaseModel):
+    status: str
+
+
+@app.put("/api/reminders/{reminder_id}")
+def update_reminder(reminder_id: int, body: ReminderUpdate):
+    return repo.update_reminder(reminder_id, body.status)
+
+
+# --- voice -------------------------------------------------------------------
+
+@app.post("/api/voice/transcribe")
+async def transcribe(audio: UploadFile = File(...)):
+    data = await audio.read()
+    suffix = "." + (audio.filename or "audio.webm").split(".")[-1]
+    path = voice.save_upload(data, suffix=suffix)
+    try:
+        text, lang = voice.transcribe(path)
+        return {"transcript": text, "detected_language": lang}
+    except Exception as e:
+        raise HTTPException(500, f"Transcription unavailable: {e}")
+
+
+# --- feature routers ---------------------------------------------------------
+
+for r in (scribe, consent, discharge, handoff, memory, orientation, patient):
+    app.include_router(r.router)
+
+
+# --- seed --------------------------------------------------------------------
+
+def _ensure_seed():
+    """Create a demo doctor + María if the DB is empty, so the app is demo-ready."""
+    if repo.staff_by_username("doctor"):
+        return
+    from core.seed import seed
+    seed()
+
+
+# --- static / SPA ------------------------------------------------------------
 
 app.mount("/media", StaticFiles(directory=str(MEDIA_DIR)), name="media")
-app.mount("/assets", StaticFiles(directory=str(WEB_DIST / "assets")), name="assets")
 
-
-@app.get("/favicon.svg", include_in_schema=False)
-def favicon():
-    return FileResponse(str(WEB_DIST / "favicon.svg"))
+if (WEB_DIST / "assets").exists():
+    app.mount("/assets", StaticFiles(directory=str(WEB_DIST / "assets")), name="assets")
 
 
 @app.get("/{full_path:path}", include_in_schema=False)
 def spa(full_path: str):
-    # Client-side routing (React Router) — any non-API, non-static path falls back to
-    # index.html and the browser router takes over.
-    return FileResponse(str(WEB_DIST / "index.html"))
+    index = WEB_DIST / "index.html"
+    if index.exists():
+        return FileResponse(str(index))
+    return {"message": "Confide backend running. Build the frontend with `npm run build` in web/."}

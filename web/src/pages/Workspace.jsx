@@ -4,6 +4,7 @@ import { api } from "../api";
 import { session } from "../lib/session.js";
 import NetworkPill from "../components/NetworkPill.jsx";
 import GemmaConsole from "../components/GemmaConsole.jsx";
+import VisitFlow from "../views/VisitFlow.jsx";
 import Overview from "../views/Overview.jsx";
 import ScribeView from "../views/ScribeView.jsx";
 import VisitsView from "../views/VisitsView.jsx";
@@ -12,9 +13,10 @@ import DischargeView from "../views/DischargeView.jsx";
 import HandoffView from "../views/HandoffView.jsx";
 
 const NAV = [
+  { key: "visit", label: "Guided visit", icon: "🧭", hint: "Onboard → discharge" },
+  { key: "dashboard", label: "Dashboard", icon: "🗂", hint: "Everything, one place" },
   { key: "overview", label: "Overview", icon: "◈", hint: "Graph & Guardian" },
   { key: "scribe", label: "Scribe", icon: "🎧", hint: "Capture a round" },
-  { key: "visits", label: "Visits", icon: "🗂", hint: "Every captured round" },
   { key: "consent", label: "Consent", icon: "📋", hint: "Explain a form" },
   { key: "discharge", label: "Discharge", icon: "🏠", hint: "Going-home plan" },
   { key: "handoff", label: "Handoff", icon: "🔀", hint: "SBAR & catch-up" },
@@ -25,7 +27,7 @@ export default function Workspace() {
   const pid = Number(id);
   const nav = useNavigate();
   const staff = session.staff();
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState("visit");
   const [patient, setPatient] = useState(null);
   const [snapshot, setSnapshot] = useState({ nodes: [], edges: [], alerts: [] });
 
@@ -66,7 +68,7 @@ export default function Workspace() {
                 <div className="si-label">{n.label}</div>
                 <div className="si-hint">{n.hint}</div>
               </span>
-              {n.key === "overview" && activeAlerts.length > 0 && (
+              {(n.key === "overview" || n.key === "visit") && activeAlerts.length > 0 && (
                 <span className="si-badge">{activeAlerts.length}</span>
               )}
             </button>
@@ -79,9 +81,10 @@ export default function Workspace() {
       </aside>
 
       <main className="ws-main">
+        {tab === "visit" && <VisitFlow {...shared} />}
+        {tab === "dashboard" && <VisitsView {...shared} />}
         {tab === "overview" && <Overview {...shared} />}
         {tab === "scribe" && <ScribeView {...shared} />}
-        {tab === "visits" && <VisitsView {...shared} />}
         {tab === "consent" && <ConsentView {...shared} />}
         {tab === "discharge" && <DischargeView {...shared} />}
         {tab === "handoff" && <HandoffView {...shared} />}

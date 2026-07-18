@@ -89,6 +89,17 @@ export const api = {
   dischargeAsk: (docId, patientId, question) =>
     req(`/api/discharge/documents/${docId}/questions`, { method: "POST", body: { patient_id: patientId, question } }),
 
+  // prescription (document upload → portal record + meds into the graph)
+  prescriptionText: (data) => req("/api/prescription/documents/text", { method: "POST", body: data }),
+  prescriptionImage: (patientId, staffId, file) => {
+    const form = new FormData();
+    form.append("patient_id", patientId);
+    if (staffId) form.append("staff_id", staffId);
+    form.append("image", file);
+    return req("/api/prescription/documents", { method: "POST", form });
+  },
+  prescriptionList: (id) => req(`/api/prescription/documents?patient_id=${id}`),
+
   // memory
   askRoom: (id, question, askedBy = "staff") =>
     req("/api/memory/ask", { method: "POST", body: { patient_id: id, question, asked_by: askedBy } }),

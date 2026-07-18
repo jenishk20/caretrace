@@ -41,6 +41,14 @@ export default function Workspace() {
 
   const activeAlerts = (snapshot.alerts || []).filter((a) => a.status === "active");
 
+  // Shared bedside device: lock every clinical view (clears the staff session so
+  // RequireStaff bounces back to login) and hand the device to the patient's view.
+  function handToPatient() {
+    if (!confirm("Hand this device to the patient? The clinical view will lock — sign in again to return.")) return;
+    session.clearStaff();
+    nav(session.patient() ? "/patient" : "/patient/login");
+  }
+
   if (!patient) return <div style={{ display: "grid", placeItems: "center", height: "100vh" }}><span className="spinner" /></div>;
 
   const shared = { patient, pid, staff, snapshot, refresh, setTab };
@@ -76,6 +84,9 @@ export default function Workspace() {
         </nav>
         <div className="grow" />
         <div className="side-foot">
+          <button className="hand-off" onClick={handToPatient} title="Lock the clinical view and give the device to the patient">
+            🤝 Hand to patient
+          </button>
           <NetworkPill />
         </div>
       </aside>
@@ -114,7 +125,11 @@ export default function Workspace() {
         .si-badge { margin-left:auto; background:var(--crit); color:#fff; font-size:11px; font-weight:700;
           min-width:20px; height:20px; border-radius:10px; display:grid; place-items:center; padding:0 6px;
           animation:pulseCrit 1.4s infinite; }
-        .side-foot { padding-top:14px; border-top:1px solid var(--line-soft); }
+        .side-foot { padding-top:14px; border-top:1px solid var(--line-soft); display:flex; flex-direction:column; gap:10px; }
+        .hand-off { display:flex; align-items:center; justify-content:center; gap:8px; padding:10px 12px;
+          border-radius:10px; font-size:13px; font-weight:600; color:var(--teal);
+          background:var(--panel); border:1px solid var(--teal-dim); transition:all 0.13s; }
+        .hand-off:hover { background:var(--panel-hi); box-shadow:0 0 0 3px var(--teal-glow); }
         .ws-main { padding:28px 34px; max-width:1180px; }
         @media (max-width:820px){ .ws{grid-template-columns:1fr;} .ws-side{position:static;height:auto;} }
       `}</style>

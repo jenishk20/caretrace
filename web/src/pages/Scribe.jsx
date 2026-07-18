@@ -90,6 +90,29 @@ export default function Scribe() {
     }
   }
 
+  function resetForm() {
+    setTranscript("");
+    setChiefComplaint("");
+    setMedications("");
+    setFollowUps("");
+    setNoteId(null);
+    setShowForm(false);
+    setStatus("");
+    setError("");
+  }
+
+  function viewNote(n) {
+    setError("");
+    setTranscript(n.raw_transcript || "");
+    setChiefComplaint(n.chief_complaint || "");
+    setMedications((n.medications || []).join("\n"));
+    setFollowUps((n.follow_ups || []).join("\n"));
+    setNoteId(n.id);
+    setShowForm(true);
+    setStatus(`Viewing note from ${n.created_at}. Edits save to this note${n.status === "finalized" ? " (already finalized)" : ""}.`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   return (
     <>
       <div className="card">
@@ -119,6 +142,11 @@ export default function Scribe() {
               Save draft
             </button>
             <button onClick={() => saveNote("finalized")}>Finalize</button>
+            {noteId && (
+              <button onClick={resetForm} style={{ float: "right" }}>
+                New note
+              </button>
+            )}
           </div>
         )}
         {error && <div className="error">{error}</div>}
@@ -129,9 +157,11 @@ export default function Scribe() {
         {notes.length ? (
           notes.map((n) => (
             <div className="list-item" key={n.id}>
-              <strong>{n.chief_complaint || "(no chief complaint)"}</strong>{" "}
-              <span className={`badge ${n.status === "finalized" ? "ok" : ""}`}>{n.status}</span>
-              <div className="muted">{n.created_at}</div>
+              <button style={{ width: "100%", textAlign: "left" }} onClick={() => viewNote(n)}>
+                <strong>{n.chief_complaint || "(no chief complaint)"}</strong>{" "}
+                <span className={`badge ${n.status === "finalized" ? "ok" : ""}`}>{n.status}</span>
+                <div className="muted">{n.created_at}</div>
+              </button>
             </div>
           ))
         ) : (

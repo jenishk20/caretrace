@@ -48,24 +48,62 @@ text   ───────────────────┘             
 - `web/src/views/AgentRunView.jsx` — unified clinician capture and approval workflow.
 - `eval/agent_eval.py` — repeatable route, cross-modal safety, and coding validation checks.
 
-## Quick start
+## Judge setup — run MedSignal locally
 
-Prerequisites: Python 3.11+, Node 22.12+, [Ollama](https://ollama.com), and Tesseract.
+**Supported demo platform:** macOS with Apple Silicon, Python 3.11+, Node 22.12+, Ollama, and Tesseract. The application is local-first: no OpenAI API key or cloud account is required at runtime.
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+1. **Clone the repository and enter it.**
 
-ollama pull gpt-oss:20b
+   ```bash
+   git clone https://github.com/jenishk20/caretrace.git
+   cd caretrace
+   ```
 
-npm --prefix web install
-npm --prefix web run build
+2. **Install local prerequisites.** On macOS with Homebrew:
 
-uvicorn app:app --host 127.0.0.1 --port 8000
-```
+   ```bash
+   brew install python@3.11 node ollama tesseract
+   ```
 
-Open `http://localhost:8000`. The seeded accounts and all demo data are synthetic.
+3. **Install the local runtime model.**
+
+   ```bash
+   ollama pull gpt-oss:20b
+   ```
+
+4. **Install MedSignal's backend and frontend dependencies.**
+
+   ```bash
+   python3.11 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   npm --prefix web install
+   npm --prefix web run build
+   ```
+
+5. **Start the application.** The launcher starts Ollama with the demo performance settings, warms the local model, and serves the app.
+
+   ```bash
+   ./run.sh
+   ```
+
+6. **Open the local app.** Visit [http://localhost:8000](http://localhost:8000). On the first launch, MedSignal seeds synthetic demo data automatically.
+
+### Synthetic demo accounts
+
+| Workspace | Username | Password | What to test |
+| --- | --- | --- | --- |
+| Clinician workspace | `doctor` | `confide` | María's evidence-linked record, agent workflow, Guardian checks, review, and approval flow. |
+| Patient space | `maria` | `confide` | Spanish-language patient questions, care summaries, and consent explanations. |
+
+All seeded records are synthetic and are included solely for demonstration and testing.
+
+### Suggested judge walkthrough
+
+1. Sign in to the clinician workspace as `doctor` and open **María González**.
+2. Run a bedside workflow from speech, text, or a prescription image; review the visible trace, evidence-linked facts, Guardian signals, and draft approvals.
+3. Open the patient space as `maria` to verify Spanish-language answers and patient-facing summaries.
+4. Return to the clinician workspace and open **Consent** to generate and hear the consent explanation in the patient's portal language.
 
 ## Verification
 

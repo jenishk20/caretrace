@@ -195,8 +195,9 @@ def medication_purposes(patient_id: int, language: str | None = None):
 def _phrase_scan(patient_id: int, assessment: dict, lang: str) -> str:
     drug = assessment["drug"]
     if assessment["safe"]:
-        facts = f"{drug} does not conflict with the patient's recorded allergies or current medicines."
-        guide = "Reassure them it looks okay with their record, but to always confirm with their care team."
+        facts = f"The configured checks found no conflict for {drug} in the patient's recorded allergies or current medicines."
+        guide = ("Say that no configured conflict was found, but do NOT call the medicine safe. "
+                 "Tell them to confirm with their clinician or pharmacist before taking it.")
     else:
         facts = "Conflicts found: " + " ".join(c["message"] for c in assessment["conflicts"])
         guide = ("Warn them clearly but calmly NOT to take it before checking with their doctor or pharmacist, "
@@ -228,8 +229,12 @@ async def check_medication(
 
     if image is not None:
         data = await image.read()
-        path = vision.save_image(data, suffix="." + (image.filename or "png").split(".")[-1])
-        ocr_text = vision.ocr(path)
+        try:
+            ocr_text = vision.ocr_bytes(data)
+        except ValueError as error:
+            raise HTTPException(400, str(error)) from error
+        except RuntimeError as error:
+            raise HTTPException(503, str(error)) from error
     elif text and text.strip():
         ocr_text = text.strip()
     else:

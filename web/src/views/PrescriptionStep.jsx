@@ -41,7 +41,8 @@ export default function PrescriptionStep({ pid, staff, refresh, onChange }) {
     try {
       const d = await api.prescriptionImage(pid, staff?.staff_id, file);
       setOcr(d.ocr_text || "");
-      await ingest(d);
+      setDoc(null);
+      setAlerts([]);
     } catch (e) { alert(e.message); } finally { setBusy(false); }
   }
 
@@ -60,7 +61,7 @@ export default function PrescriptionStep({ pid, staff, refresh, onChange }) {
             <b style={{ fontSize: 14 }}>Prescription</b>
             <label className="btn btn-ghost" style={{ padding: "6px 10px", fontSize: 12 }}>
               📷 Photo
-              <input type="file" accept="image/*" style={{ display: "none" }}
+              <input type="file" accept="image/png,image/jpeg,image/webp" style={{ display: "none" }}
                 onChange={(e) => e.target.files[0] && uploadImg(e.target.files[0])} />
             </label>
           </div>

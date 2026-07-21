@@ -44,6 +44,14 @@ export default function DischargeView({ pid, staff }) {
     } catch (e) { alert(e.message); } finally { setBusy(false); }
   }
 
+  async function uploadImg(file) {
+    setBusy(true);
+    try {
+      const d = await api.dischargeImage(pid, staff?.staff_id, file);
+      setDoc(null); setOcr(d.ocr_text || ""); setQa([]);
+    } catch (e) { alert(e.message); } finally { setBusy(false); }
+  }
+
   async function ask(question) {
     const text = question ?? q;
     if (!text.trim() || !doc) return;
@@ -66,7 +74,14 @@ export default function DischargeView({ pid, staff }) {
 
       <div className="two-col">
         <div className="card" style={{ padding: 18 }}>
-          <b style={{ fontSize: 14 }}>Discharge sheet</b>
+          <div className="row between">
+            <b style={{ fontSize: 14 }}>Discharge sheet</b>
+            <label className="btn btn-ghost" style={{ padding: "6px 10px", fontSize: 12 }}>
+              📷 Photo
+              <input type="file" accept="image/png,image/jpeg,image/webp" style={{ display: "none" }}
+                onChange={(e) => e.target.files[0] && uploadImg(e.target.files[0])} />
+            </label>
+          </div>
           <textarea className="textarea" style={{ minHeight: 240, marginTop: 10, fontFamily: "var(--mono)", fontSize: 12 }}
             value={ocr} onChange={(e) => setOcr(e.target.value)} />
           <button className="btn btn-primary" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}

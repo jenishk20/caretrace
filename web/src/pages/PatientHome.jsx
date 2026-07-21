@@ -379,7 +379,7 @@ function MedScanner({ me, lang }) {
     } catch (e) { alert(e.message); } finally { setBusy(false); }
   }
 
-  const verdict = result?.found ? (result.safe ? "safe" : "conflict") : null;
+  const verdict = result?.found ? (result.safe ? "review" : "conflict") : null;
 
   return (
     <div className="card" style={{ padding: 18 }}>
@@ -412,7 +412,7 @@ function MedScanner({ me, lang }) {
 
       {result && (
         <div className={`verdict ${verdict}`}>
-          {verdict === "safe" && <><div className="v-icon">✅</div><b>Looks safe with your record</b></>}
+          {verdict === "review" && <><div className="v-icon">🔎</div><b>No configured conflict found — confirm before taking</b></>}
           {verdict === "conflict" && <><div className="v-icon">⚠️</div><b>Check with your doctor first</b></>}
           {!result.found && <><div className="v-icon">🤔</div><b>Couldn't read a medicine name</b></>}
           {(result.results || []).map((res, i) => (
@@ -433,7 +433,7 @@ function MedScanner({ me, lang }) {
 
       <style>{`
         .verdict { margin-top:14px; padding:16px; border-radius:12px; text-align:center; animation:fadeUp 0.3s ease both; }
-        .verdict.safe { background:rgba(62,224,138,0.1); border:1px solid var(--ok); }
+        .verdict.review { background:var(--bg-soft); border:1px solid var(--line); }
         .verdict.conflict { background:rgba(255,90,110,0.1); border:1px solid var(--crit);
           animation:fadeUp 0.3s ease both, pulseCrit 1.6s ease 3; }
         .v-icon { font-size:40px; margin-bottom:6px; }

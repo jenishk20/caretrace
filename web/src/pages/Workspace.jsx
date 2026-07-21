@@ -52,7 +52,7 @@ export default function Workspace() {
       <aside className="ws-side">
         <div className="row" style={{ gap: 10, padding: "4px 8px 20px" }}>
           <span style={{ color: "var(--teal)", fontSize: 20 }}>◈</span>
-          <b>CareTrace</b>
+          <b>MedSignal</b>
         </div>
         <button className="side-back" onClick={() => nav("/doctor")}>← All patients</button>
         <div className="side-pt">
@@ -85,7 +85,7 @@ export default function Workspace() {
       <main className="ws-main">
         <header className="ws-utility">
           <div>
-            <div className="ws-kicker">CARETRACE CLINICAL WORKSPACE</div>
+            <div className="ws-kicker">MEDSIGNAL CLINICAL WORKSPACE</div>
             <h1>{activeNav.label}</h1>
             <p>{activeNav.hint} · all facts remain on this device.</p>
           </div>

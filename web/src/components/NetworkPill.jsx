@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 
-// Confide's runtime network mode. The backend never probes an external host;
+// MedSignal's runtime network mode. The backend never probes an external host;
 // local Ollama remains reachable while external runtime networking is disabled.
 export default function NetworkPill() {
   const [st, setSt] = useState(null);

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a three-tier evaluation framework (deterministic / golden / LLM-judge) that runs the real Doctor Offline pipeline against curated test cases, plus an offline dashboard that visualizes results and the bugs found.
+**Goal:** Build a three-tier evaluation framework (deterministic / golden / LLM-judge) that runs the real MedSignal pipeline against curated test cases, plus an offline dashboard that visualizes results and the bugs found.
 
 **Architecture:** A standalone `eval/` package. The harness spins up a fresh temp SQLite DB per case (by repointing `core.db.DB_PATH`), calls the *real* feature functions, captures output + latency, and routes each output to a tier-appropriate scorer. Results serialize to `eval/results/latest.json`, which a self-contained `eval/dashboard/index.html` renders offline.
 

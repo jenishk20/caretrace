@@ -51,7 +51,7 @@ export default function PrescriptionStep({ pid, staff, refresh, onChange }) {
       <div className="muted" style={{ fontSize: 13 }}>Prescription · Watch</div>
       <h1 style={{ fontSize: 26, letterSpacing: "-0.02em", marginBottom: 4 }}>Add the prescription</h1>
       <p className="muted" style={{ marginBottom: 20 }}>
-        Upload or paste the prescription. CareTrace files it to the portal and adds its medications to
+        Upload or paste the prescription. MedSignal files it to the portal and adds its medications to
         the living record — where the Guardian checks them against her allergies before you leave the room.
       </p>
 

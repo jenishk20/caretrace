@@ -30,7 +30,7 @@ export default function ScribeView({ pid, staff, snapshot, refresh }) {
       <div className="muted" style={{ fontSize: 13 }}>Clinical Scribe · Hear</div>
       <h1 style={{ fontSize: 26, letterSpacing: "-0.02em", marginBottom: 4 }}>Capture the encounter</h1>
       <p className="muted" style={{ marginBottom: 20 }}>
-        Dictate or type what's said. CareTrace structures the note, grows the graph, and the Guardian
+        Dictate or type what's said. MedSignal structures the note, grows the graph, and the Guardian
         checks it against the record — in one pass.
       </p>
 
@@ -44,7 +44,7 @@ export default function ScribeView({ pid, staff, snapshot, refresh }) {
             <div className="card thinking" style={{ padding: 20 }}>
               <span className="spinner" />
               <div>
-                <b>CareTrace is thinking…</b>
+                <b>MedSignal is thinking…</b>
                 <div className="muted" style={{ fontSize: 13 }}>Structuring the note · extracting facts · running the Guardian</div>
               </div>
             </div>

@@ -11,7 +11,7 @@ export default function Landing() {
   return (
     <div className="landing">
       <header className="landing-nav">
-        <Link to="/" className="brand" aria-label="CareTrace home"><span>✦</span><b>CareTrace</b></Link>
+        <Link to="/" className="brand" aria-label="MedSignal home"><span>✦</span><b>MedSignal</b></Link>
         <div className="row" style={{ gap: 14 }}><span className="nav-note">LOCAL CLINICAL INTELLIGENCE</span><NetworkPill /></div>
       </header>
 
@@ -20,8 +20,8 @@ export default function Landing() {
           <div className="hero-copy fade-up">
             <div className="eyebrow"><i />EVIDENCE-LINKED · CLINICIAN-REVIEWED</div>
             <h1>Bring the whole<br /><em>patient story</em> into view.</h1>
-            <p>CareTrace gives care teams a calm, local workspace for encounters, safety checks, and handoffs—without sending patient context to the cloud.</p>
-            <div className="privacy-note"><span>🔒</span><p><b>Data never leaves this workspace.</b> CareTrace stores records locally and uses the on-device GPT-OSS model only.</p></div>
+            <p>MedSignal gives care teams a calm, local workspace for encounters, safety checks, and handoffs—without sending patient context to the cloud.</p>
+            <div className="privacy-note"><span>🔒</span><p><b>Data never leaves this workspace.</b> MedSignal stores records locally and uses the on-device GPT-OSS model only.</p></div>
             <div className="hero-actions">
               <Link to="/doctor/login" className="hero-cta primary"><span>🩺</span><div><b>Open clinical workspace</b><small>Capture, review, and hand off</small></div><strong>→</strong></Link>
               <Link to="/patient/login" className="hero-cta"><span>💙</span><div><b>Open patient space</b><small>Understand care in plain language</small></div><strong>→</strong></Link>
@@ -30,7 +30,7 @@ export default function Landing() {
           </div>
 
           <aside className="signal-card fade-up" style={{ animationDelay: "0.08s" }}>
-            <div className="signal-top"><div><span className="signal-label">LIVE CARETRACE SIGNAL</span><h2>One record. One next step.</h2></div><span className="signal-dot" /></div>
+            <div className="signal-top"><div><span className="signal-label">LIVE MEDSIGNAL SIGNAL</span><h2>One record. One next step.</h2></div><span className="signal-dot" /></div>
             <div className="signal-patient"><div className="signal-avatar">MG</div><div><b>María González</b><small>68 · Room 4B · Chest pain</small></div><span className="safe-pill">LOCAL</span></div>
             <div className="signal-line"><span className="line-node teal" /><div><b>New encounter captured</b><small>Source-linked fact set ready for review</small></div></div>
             <div className="signal-line"><span className="line-node blue" /><div><b>Patient graph updated</b><small>Medication, observation, and follow-up connected</small></div></div>

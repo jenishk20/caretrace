@@ -1,4 +1,4 @@
-"""The living patient knowledge graph — Confide's "Remember".
+"""The living patient knowledge graph — MedSignal's "Remember".
 
 Two responsibilities:
   1. Persistence: add / query nodes and edges for a patient.

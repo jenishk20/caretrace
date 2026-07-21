@@ -1,4 +1,4 @@
-"""Repeatable local checks for CareTrace's clinician-facing agent workflow."""
+"""Repeatable local checks for MedSignal's clinician-facing agent workflow."""
 from __future__ import annotations
 
 from pathlib import Path

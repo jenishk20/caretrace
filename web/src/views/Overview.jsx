@@ -65,7 +65,7 @@ export default function Overview({ patient, pid, snapshot, refresh, setTab }) {
         <div className="card" style={{ padding: 18, overflow: "hidden" }}>
           <div className="row between" style={{ marginBottom: 6 }}>
             <b>Live patient graph</b>
-            <span className="muted" style={{ fontSize: 12 }}>CareTrace's memory — every interaction adds a node</span>
+            <span className="muted" style={{ fontSize: 12 }}>MedSignal's memory — every interaction adds a node</span>
           </div>
           <GraphView snapshot={snapshot} height={430} onSelect={setSel} />
           {sel && (
@@ -131,7 +131,7 @@ export default function Overview({ patient, pid, snapshot, refresh, setTab }) {
             </div>
             {answer && (
               <div className="answer fade-up">
-                <span style={{ color: "var(--teal)", fontSize: 12, fontWeight: 700 }}>✦ CARETRACE</span>
+                <span style={{ color: "var(--teal)", fontSize: 12, fontWeight: 700 }}>✦ MEDSIGNAL</span>
                 <div style={{ marginTop: 4 }}>{answer.answer}</div>
               </div>
             )}

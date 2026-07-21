@@ -1,4 +1,4 @@
-# CareTrace MVP specification
+# MedSignal MVP specification
 
 ## Track and audience
 
@@ -8,7 +8,7 @@
 
 ## Product promise
 
-CareTrace answers: **What changed, what needs attention, and what evidence supports that concern?**
+MedSignal answers: **What changed, what needs attention, and what evidence supports that concern?**
 
 It must always link its statements to source notes, prescriptions, medications, allergies, observations, or clinician-confirmed graph facts.
 

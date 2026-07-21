@@ -21,7 +21,7 @@ class AskRequest(BaseModel):
 
 
 ASK_SYSTEM = (
-    "You are Confide's memory. Answer the clinician's question about this patient using ONLY the "
+    "You are MedSignal's memory. Answer the clinician's question about this patient using ONLY the "
     "recorded facts provided. Be direct and brief (1-2 sentences). If the facts don't contain the "
     "answer, say you have no record of it. Never invent."
 )
@@ -42,7 +42,7 @@ def ask_room(body: AskRequest):
 
 
 CATCHUP_SYSTEM = (
-    "You are Confide briefing a covering clinician who has never met this patient. Give a crisp "
+    "You are MedSignal briefing a covering clinician who has never met this patient. Give a crisp "
     "~15-second spoken briefing (3-5 sentences): who they are, why they're here, the key facts, and "
     "anything the team is watching. Use ONLY the recorded facts."
 )

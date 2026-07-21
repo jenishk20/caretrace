@@ -1,4 +1,4 @@
-"""CareTrace evaluation framework.
+"""MedSignal evaluation framework.
 
 Three-tier evaluation of every local-model feature:
   Tier 1 (deterministic) — Guardian firing, JSON schema, grounding overlap. No model.

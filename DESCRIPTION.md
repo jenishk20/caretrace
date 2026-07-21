@@ -1,4 +1,4 @@
-# Confide — a second clinician in the room that never forgets
+# MedSignal — a second clinician in the room that never forgets
 
 *On-device, on GPT-OSS 20B, works with the network off.*
 
@@ -6,7 +6,7 @@
 
 The first ten minutes of any hospital visit are the most confusing, and for a scared, non-English-speaking patient they're frightening. Meanwhile clinicians make mistakes when they're tired and busy — a drug given against a known allergy, a contradiction nobody catches, a lab ordered and forgotten. Both failures share one root cause: nobody can hold the whole patient in their head. And in healthcare, the data is the most sensitive there is, so any solution that ships that data to a cloud API defeats its own purpose.
 
-Confide is a single always-on presence, tied to a patient for their stay, that **Hears** every conversation, **Remembers** everything in one living patient model, and **Watches over** the care, catching the mistakes people make. Everything runs on-device on GPT-OSS 20B, works with the network off, and never leaves the machine.
+MedSignal is a single always-on presence, tied to a patient for their stay, that **Hears** every conversation, **Remembers** everything in one living patient model, and **Watches over** the care, catching the mistakes people make. Everything runs on-device on GPT-OSS 20B, works with the network off, and never leaves the machine.
 
 ---
 
@@ -43,7 +43,7 @@ Confide is a single always-on presence, tied to a patient for their stay, that *
 
 | Feature | Subtitle | Description |
 |---|---|---|
-| **Ask Confide** | What's happening to me? | Calm, grounded, plain-language chat about their own care, streamed in their language. |
+| **Ask MedSignal** | What's happening to me? | Calm, grounded, plain-language chat about their own care, streamed in their language. |
 | **My Day** | A checklist, not a lecture | Date, days since surgery, and today's meds/tasks — factual, no clichés. |
 | **My Medicines** | What each one is for | Their meds with plain purpose and schedule — plus scan-a-new-medicine at home. |
 | **Medicine Scanner** | Is this safe to take? | Point the camera at a new pill; warns if it conflicts with their record. |

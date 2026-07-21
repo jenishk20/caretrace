@@ -20,7 +20,7 @@ ollama serve >/tmp/ollama-medsignal.log 2>&1 &
 sleep 2
 
 # Warm the model into memory so the first demo call isn't a cold load.
-model_name="${CARETRACE_LOCAL_MODEL:-gpt-oss:20b}"
+model_name="${MEDSIGNAL_LOCAL_MODEL:-${CARETRACE_LOCAL_MODEL:-gpt-oss:20b}}"
 echo "→ warming ${model_name}"
 ollama run "${model_name}" "ready" >/dev/null 2>&1 || true
 

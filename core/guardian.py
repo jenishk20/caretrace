@@ -1,4 +1,4 @@
-"""The Guardian — Confide's "Watch over".
+"""The Guardian — MedSignal's "Watch over".
 
 An always-on reasoning loop that checks what's said and done against the graph and
 speaks up on its own. Three behaviors, all triggered by deterministic code against
@@ -12,7 +12,7 @@ never to decide whether there's a problem.
   3. forgotten order        — an ordered lab/recheck whose window has elapsed with
      nothing marking it done.
 
-Every alert is persisted to guardian_alerts, so the record of what Confide caught
+Every alert is persisted to guardian_alerts, so the record of what MedSignal caught
 survives across the whole stay.
 """
 from __future__ import annotations
@@ -43,7 +43,7 @@ def _phrase(kind: str, facts: str, fallback: str) -> str:
         return fallback
     try:
         prompt = (
-            f"You are Confide, a calm bedside clinical assistant. In ONE or TWO short sentences, "
+            f"You are MedSignal, a calm bedside clinical assistant. In ONE or TWO short sentences, "
             f"gently and factually flag this to the care team. Do not give orders; just surface the "
             f"concern and the evidence. Context ({kind}): {facts}"
         )

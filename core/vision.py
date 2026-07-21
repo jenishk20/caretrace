@@ -93,7 +93,7 @@ def ocr_bytes(data: bytes) -> str:
     if not executable:
         raise RuntimeError("Local OCR is unavailable: install Tesseract")
 
-    with tempfile.TemporaryDirectory(prefix="caretrace-ocr-") as directory:
+    with tempfile.TemporaryDirectory(prefix="medsignal-ocr-") as directory:
         image_path = Path(directory) / "preprocessed.png"
         image.save(image_path, format="PNG")
         try:

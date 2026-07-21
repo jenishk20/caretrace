@@ -12,7 +12,7 @@ from core.config import REASONING_EFFORT_HIGH, REASONING_EFFORT_LOW
 
 MAX_STEPS = 8
 
-ORCHESTRATOR_SYSTEM = """You are Confide's clinical workflow orchestrator. You do not make
+ORCHESTRATOR_SYSTEM = """You are MedSignal's clinical workflow orchestrator. You do not make
 clinical decisions or invent facts: you call tools. Tools named run_guardian,
 reconcile_medication, and sweep_forgotten_orders execute deterministic curated
 rules; report their outputs verbatim.

@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
 import NetworkPill from "./NetworkPill.jsx";
 
-export default function AuthShell({ icon, title, subtitle, audience = "CareTrace workspace", children }) {
+export default function AuthShell({ icon, title, subtitle, audience = "MedSignal workspace", children }) {
   return (
     <div className="auth-page">
-      <header className="auth-nav"><Link to="/" className="auth-brand"><span>✦</span><b>CareTrace</b></Link><NetworkPill /></header>
+      <header className="auth-nav"><Link to="/" className="auth-brand"><span>✦</span><b>MedSignal</b></Link><NetworkPill /></header>
       <main className="auth-main">
         <section className="auth-story fade-up">
           <div className="auth-kicker"><i />{audience.toUpperCase()}</div>

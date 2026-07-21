@@ -1,8 +1,8 @@
-# CareTrace
+# MedSignal
 
-CareTrace is a local-first clinical intelligence assistant for hospital teams. It turns clinician-confirmed encounter facts into an evidence-linked patient timeline, runs deterministic safety checks, and produces clinician-approved drafts for documentation, handoff, billing review, and patient debriefs.
+MedSignal is a local-first clinical intelligence assistant for hospital teams. It turns clinician-confirmed encounter facts into an evidence-linked patient timeline, runs deterministic safety checks, and produces clinician-approved drafts for documentation, handoff, billing review, and patient debriefs.
 
-All demo records are synthetic. CareTrace is clinical decision support, not a diagnosis, prescription, or autonomous medication-safety system.
+All demo records are synthetic. MedSignal is clinical decision support, not a diagnosis, prescription, or autonomous medication-safety system.
 
 ## Local clinical workflow agent
 
@@ -12,7 +12,7 @@ One clinician input creates a reviewable draft bundle without sending data to a 
 speech ── faster-whisper ─┐
 image  ── Tesseract OCR ──┼─> local gpt-oss tool loop ─> clinician review
 text   ───────────────────┘             │
-                                    CareTrace graph + Guardian
+                                    MedSignal graph + Guardian
 ```
 
 - A spoken round drafts a note, source-linked facts, Guardian checks, evidence-backed billing candidates, an SBAR handoff, and a patient debrief.
@@ -22,7 +22,7 @@ text   ───────────────────┘             
 
 ## Safety and privacy boundary
 
-- Runtime inference, OCR, safety rules, and SQLite storage stay on the local CareTrace host.
+- Runtime inference, OCR, safety rules, and SQLite storage stay on the local MedSignal host.
 - `gpt-oss:20b` is the language layer only: it structures stated facts and drafts language.
 - Deterministic code in `core/curated.py` and `core/guardian.py` owns medication categories, interaction rules, clinical alerts, and billing-code validity.
 - Every Guardian alert is source-linked and requires clinician review.

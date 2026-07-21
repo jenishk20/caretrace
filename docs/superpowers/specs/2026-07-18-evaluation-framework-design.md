@@ -1,4 +1,4 @@
-# Doctor Offline — Evaluation Framework Design
+# MedSignal — Evaluation Framework Design
 
 **Date:** 2026-07-18
 **Context:** Build with GPT-OSS / JustBuild hackathon, On-Device AI with GPT-OSS 20B track.
@@ -10,7 +10,7 @@ Category 4 (Underlying Model), Category 3 (Enablement/latency), and Category 2 (
 
 ## 1. Thesis under test
 
-Doctor Offline's core architectural claim (stated in `core/llm.py`, `core/curated.py`,
+MedSignal's core architectural claim (stated in `core/llm.py`, `core/curated.py`,
 `core/guardian.py`):
 
 > **GPT-OSS is the language layer, never the decision-maker. Every clinical judgment

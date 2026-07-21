@@ -1,4 +1,4 @@
-"""Central configuration for CareTrace — the local clinical intelligence assistant."""
+"""Central configuration for MedSignal — the local clinical intelligence assistant."""
 import os
 from pathlib import Path
 from urllib.parse import urlparse
@@ -10,14 +10,21 @@ MEDIA_DIR = DATA_DIR / "media"
 AUDIO_DIR = MEDIA_DIR / "audio"
 IMAGES_DIR = MEDIA_DIR / "images"
 
+# Retain the original filename so existing local patient records remain available.
 DB_PATH = DATA_DIR / "caretrace.db"
 
 # --- GPT-OSS via local Ollama ------------------------------------------------
 # This application must never send clinical data to a remote model endpoint.
-OLLAMA_HOST = os.environ.get("CARETRACE_OLLAMA_HOST", "http://127.0.0.1:11434")
+OLLAMA_HOST = os.environ.get(
+    "MEDSIGNAL_OLLAMA_HOST",
+    os.environ.get("CARETRACE_OLLAMA_HOST", "http://127.0.0.1:11434"),
+)
 if urlparse(OLLAMA_HOST).hostname not in {"localhost", "127.0.0.1", "::1"}:
-    raise RuntimeError("CARETRACE_OLLAMA_HOST must be a loopback endpoint in local-only mode.")
-OLLAMA_MODEL = os.environ.get("CARETRACE_LOCAL_MODEL", "gpt-oss:20b")
+    raise RuntimeError("MEDSIGNAL_OLLAMA_HOST must be a loopback endpoint in local-only mode.")
+OLLAMA_MODEL = os.environ.get(
+    "MEDSIGNAL_LOCAL_MODEL",
+    os.environ.get("CARETRACE_LOCAL_MODEL", "gpt-oss:20b"),
+)
 REASONING_EFFORT_HIGH = "high"
 REASONING_EFFORT_LOW = "low"
 LLM_TIMEOUT = 120  # seconds — local models can occasionally stall

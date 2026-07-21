@@ -1,4 +1,4 @@
-"""CareTrace — FastAPI app: auth, patients, graph, Guardian, and feature routers.
+"""MedSignal — FastAPI app: auth, patients, graph, Guardian, and feature routers.
 
 Everything is local: SQLite for memory, GPT-OSS via Ollama for language, faster-whisper
 + Piper for voice. Nothing leaves the device.
@@ -18,7 +18,7 @@ from features import agent, consent, discharge, handoff, memory, orientation, pa
 
 WEB_DIST = ROOT / "web" / "dist"
 
-app = FastAPI(title="CareTrace")
+app = FastAPI(title="MedSignal")
 
 
 @app.on_event("startup")
@@ -35,7 +35,7 @@ def _startup():
 # --- status ------------------------------------------------------------------
 
 def _network_reachable(timeout: float = 0.4) -> bool:
-    """Confide deliberately disables external runtime networking.
+    """MedSignal deliberately disables external runtime networking.
 
     This reports the application's network mode without probing an external host.
     Physical interface state is outside the app's trust boundary.
@@ -313,4 +313,4 @@ def spa(full_path: str):
         # Keep the HTML entry point fresh so an already-open local browser picks
         # up the latest hashed frontend bundle after a rebuild or restart.
         return FileResponse(str(index), headers={"Cache-Control": "no-store, max-age=0"})
-    return {"message": "CareTrace backend running. Build the frontend with `npm run build` in web/."}
+    return {"message": "MedSignal backend running. Build the frontend with `npm run build` in web/."}

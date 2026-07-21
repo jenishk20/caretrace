@@ -164,7 +164,7 @@ export default function AgentRunView({ patient, pid, staff, refresh }) {
   return (
     <div className="agent-run-view">
       <header className="agent-hero">
-        <div><div className="eyebrow">One bedside input → complete workflow</div><h1>Run Confide for {patient.name}</h1><p>The local agent chooses the tools. Curated code verifies safety. You decide what leaves draft.</p></div>
+        <div><div className="eyebrow">One bedside input → complete workflow</div><h1>Run MedSignal for {patient.name}</h1><p>The local agent chooses the tools. Curated code verifies safety. You decide what leaves draft.</p></div>
         <div className="trust-lock"><span>●</span><b>ON-PREM</b><small>gpt-oss:20b</small></div>
       </header>
       <div className="mode-tabs">{MODES.map((item) => <button key={item.key} className={mode === item.key ? "on" : ""} onClick={() => chooseMode(item.key)}><span>{item.icon}</span><b>{item.label}</b><small>{item.hint}</small></button>)}</div>

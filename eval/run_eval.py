@@ -148,7 +148,7 @@ def main() -> None:
     args = ap.parse_args()
     only = [f.strip() for f in args.only.split(",")] if args.only else None
 
-    print(f"Doctor Offline eval  (model available: {model_client.available()})")
+    print(f"MedSignal eval  (model available: {model_client.available()})")
     result = run(only, use_model=not args.no_model)
 
     RESULTS.mkdir(exist_ok=True)

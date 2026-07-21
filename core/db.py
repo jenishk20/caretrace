@@ -1,6 +1,6 @@
-"""SQLite: schema + connection for Confide.
+"""SQLite: schema + connection for MedSignal.
 
-Everything Confide knows lives here — logins, transcripts, the patient knowledge
+Everything MedSignal knows lives here — logins, transcripts, the patient knowledge
 graph (nodes + edges), every Guardian alert that has ever fired, reminders,
 consent/discharge documents and their Q&A logs. One file, fully local.
 """
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS encounters (
 );
 
 -- The living knowledge graph --------------------------------------------------
--- Each fact Confide learns is a node. GPT-OSS extracts + tags; code owns the rest.
+-- Each fact MedSignal learns is a node. GPT-OSS extracts + tags; code owns the rest.
 CREATE TABLE IF NOT EXISTS graph_nodes (
     id INTEGER PRIMARY KEY,
     patient_id INTEGER NOT NULL REFERENCES patients(id),

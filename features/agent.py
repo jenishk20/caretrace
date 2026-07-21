@@ -1,4 +1,4 @@
-"""HTTP contracts for Confide's local workflow agent."""
+"""HTTP contracts for MedSignal's local workflow agent."""
 from __future__ import annotations
 
 from pathlib import Path

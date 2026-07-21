@@ -1,6 +1,6 @@
 """Curated clinical knowledge — the code-owned source of truth.
 
-Confide's reliability rule: gpt-oss never decides pharmacology from memory. It only
+MedSignal's reliability rule: gpt-oss never decides pharmacology from memory. It only
 extracts drug/allergy/symptom mentions and tags each with a normalized CATEGORY
 from the controlled vocabulary below. Every clinical judgment — does this drug
 conflict with an allergy, does it interact with another drug, when is a lab due —

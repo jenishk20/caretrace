@@ -81,7 +81,7 @@ export default function ConsentView({ pid, staff, patient }) {
       <div className="muted" style={{ fontSize: 13 }}>Consent Explainer · Hear</div>
       <h1 style={{ fontSize: 26, letterSpacing: "-0.02em", marginBottom: 4 }}>Explain the consent form</h1>
       <p className="muted" style={{ marginBottom: 20 }}>
-        CareTrace reads the form, explains it in plain language, and logs the patient's questions — real
+        MedSignal reads the form, explains it in plain language, and logs the patient's questions — real
         evidence they understood, not just a signature.
       </p>
       <div className="soft-note" style={{ marginTop: -8, marginBottom: 20, fontSize: 13 }}>

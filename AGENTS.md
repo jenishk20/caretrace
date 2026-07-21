@@ -1,15 +1,15 @@
-# CareTrace agent guidance
+# MedSignal agent guidance
 
 ## Product
 
-CareTrace is a local-first clinical intelligence assistant for hospital teams. It converts clinician-confirmed encounter facts into an evidence-linked patient timeline, runs deterministic safety checks, and produces clinician-approved plain-language patient debriefs.
+MedSignal is a local-first clinical intelligence assistant for hospital teams. It converts clinician-confirmed encounter facts into an evidence-linked patient timeline, runs deterministic safety checks, and produces clinician-approved plain-language patient debriefs.
 
 ## Privacy and safety are non-negotiable
 
 - Use synthetic patient data only. Never commit, log, test, or demo with real patient data or personally identifiable health information.
 - The intended architecture is on-premises: storage, OCR, inference, and safety rules remain inside the hospital network.
 - The target runtime model is OpenAI `gpt-oss-20b` on appropriately provisioned on-prem hardware. Do not send patient data to a cloud model.
-- CareTrace is clinical decision support, not a diagnosis, prescription, or autonomous medication-safety system.
+- MedSignal is clinical decision support, not a diagnosis, prescription, or autonomous medication-safety system.
 - Never tell a patient that a medication is safe to take. Flag a potential concern for clinician or pharmacist review.
 - Every Guardian alert must say **Requires clinician review**, name its deterministic rule, and cite source facts.
 - Patient-facing language must restate only clinician-confirmed, source-grounded facts.

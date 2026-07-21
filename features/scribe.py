@@ -1,4 +1,4 @@
-"""Clinical Scribe — Confide's "Hear" base.
+"""Clinical Scribe — MedSignal's "Hear" base.
 
 Capture (voice or typed) -> structured note -> extracted graph nodes -> Guardian
 review. This is the pipeline every proactive beat rides on: the same transcript

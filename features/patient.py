@@ -3,7 +3,7 @@
   - Language          — everything the patient sees renders in their chosen language.
   - "What's happening to me?" — a calm, grounded, plain-language chat about their care.
   - My medicines      — each drug, what it's for, and its schedule.
-  - Scan a medicine   — point the camera at a new bottle; Confide checks it against their
+  - Scan a medicine   — point the camera at a new bottle; MedSignal checks it against their
                         allergies and current meds and warns of conflicts (on-device).
   - Care recap        — one plain recap of the whole visit.
   - My journey        — the timeline of their stay(s).
@@ -62,7 +62,7 @@ class ChatRequest(BaseModel):
 
 
 CHAT_SYSTEM = (
-    "You are Confide, speaking directly and warmly to the patient in plain language (no jargon). "
+    "You are MedSignal, speaking directly and warmly to the patient in plain language (no jargon). "
     "You are entirely on their side. Answer using ONLY their recorded care facts. Be calm, honest, "
     "and brief (2-4 sentences). If you don't have the answer, gently say a nurse can help. Never invent."
 )
@@ -120,7 +120,7 @@ def chat_stream(body: ChatRequest):
 
 
 DEBRIEF_SYSTEM = (
-    "You are Confide giving the patient one warm, plain-language recap of their whole hospital visit "
+    "You are MedSignal giving the patient one warm, plain-language recap of their whole hospital visit "
     "as they head home. 4-6 short sentences: what happened, what to do at home, what to watch for. "
     "Use ONLY recorded facts. Reassuring and clear."
 )
@@ -215,7 +215,7 @@ def _phrase_scan(patient_id: int, assessment: dict, lang: str) -> str:
     return ask(
         f"A patient scanned a medicine: {drug}.\n{facts}\n\n{guide}\n"
         f"Speak directly to the patient in 1-3 short sentences, ENTIRELY in {lang}:",
-        system="You are Confide, a calm on-device helper speaking plainly and kindly to a patient.",
+        system="You are MedSignal, a calm on-device helper speaking plainly and kindly to a patient.",
     )
 
 
@@ -273,7 +273,7 @@ async def check_medication(
         msg = ask(
             f"In {lang}, gently ask the patient to show the medicine label more clearly. "
             "Reply with EXACTLY ONE short sentence. No options, no lists, no formatting.",
-            system="You are Confide, speaking kindly to a patient. One short sentence only.",
+            system="You are MedSignal, speaking kindly to a patient. One short sentence only.",
             max_tokens=60,
         )
         return {"language": lang, "ocr_text": ocr_text, "found": False, "message": msg}

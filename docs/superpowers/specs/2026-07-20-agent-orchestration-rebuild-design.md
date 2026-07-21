@@ -2,7 +2,7 @@
 
 ## Goal
 
-Turn Confide's existing feature-by-feature clinical workflow into one local, dynamic agent run that chooses tools based on speech, document, or correction input while preserving the invariant that the model handles language and deterministic code makes every clinical and billing-validity decision.
+Turn MedSignal's existing feature-by-feature clinical workflow into one local, dynamic agent run that chooses tools based on speech, document, or correction input while preserving the invariant that the model handles language and deterministic code makes every clinical and billing-validity decision.
 
 ## Architecture
 

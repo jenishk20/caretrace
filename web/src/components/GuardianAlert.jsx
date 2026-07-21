@@ -32,7 +32,7 @@ export default function GuardianAlert({ alert, onAck, onDismiss, live = false })
           </span>
         </div>
         <span className="row" style={{ gap: 6, fontSize: 11, color: "var(--text-mute)" }}>
-          <span style={{ color: "var(--teal)" }}>◈ CareTrace</span>
+          <span style={{ color: "var(--teal)" }}>◈ MedSignal</span>
           {live && <span style={{ color: s.color, fontWeight: 700 }}>· unprompted</span>}
         </span>
       </div>

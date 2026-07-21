@@ -14,7 +14,7 @@ export default function Roster() {
   const logout = () => { session.clearStaff(); nav("/"); };
 
   return <div className="roster-page">
-    <header className="roster-nav"><div className="row" style={{ gap: 10 }}><span className="roster-mark">✦</span><b>CareTrace</b><span className="roster-nav-label">CLINICAL ROSTER</span></div><div className="row" style={{ gap: 12 }}><NetworkPill /><span className="staff-chip">🩺 {staff?.name}</span><button className="btn btn-ghost roster-logout" onClick={logout}>Log out</button></div></header>
+    <header className="roster-nav"><div className="row" style={{ gap: 10 }}><span className="roster-mark">✦</span><b>MedSignal</b><span className="roster-nav-label">CLINICAL ROSTER</span></div><div className="row" style={{ gap: 12 }}><NetworkPill /><span className="staff-chip">🩺 {staff?.name}</span><button className="btn btn-ghost roster-logout" onClick={logout}>Log out</button></div></header>
     <main className="roster-main">
       <section className="roster-hero fade-up"><div><div className="roster-kicker"><i />LIVE CARE CENSUS</div><h1>Start with the<br /><em>whole picture.</em></h1><p>Open a living record to see the latest encounters, connected facts, and Guardian concerns in one place.</p></div><div className="roster-actions"><button className="btn btn-primary" onClick={() => setShowAdmit(true)}>＋ Admit patient</button><span>Every new admission begins as an evidence-linked record.</span></div></section>
       <section className="census-strip"><Census icon="◈" label="Patients" value={patients.length} note="in your workspace" /><Census icon="●" label="Admitted" value={admitted} note="active records" tone="ok" /><Census icon="▣" label="Local mode" value="ON" note="network optional" tone="teal" /></section>

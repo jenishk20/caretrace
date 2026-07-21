@@ -27,7 +27,7 @@ export default function PatientLogin() {
   }
 
   return (
-    <AuthShell icon="💙" audience="Patient space" title="Welcome" subtitle="CareTrace is here for you — ask anything about your care.">
+    <AuthShell icon="💙" audience="Patient space" title="Welcome" subtitle="MedSignal is here for you — ask anything about your care.">
       <form onSubmit={submit}>
         <label className="field">
           <span>Username</span>

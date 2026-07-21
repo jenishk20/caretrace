@@ -132,7 +132,7 @@ export default function VisitsView({ patient, pid, snapshot, setTab }) {
             </div>
             {answer && (
               <div className="answer fade-up">
-                <span style={{ color: "var(--teal)", fontSize: 12, fontWeight: 700 }}>◈ CONFIDE</span>
+                <span style={{ color: "var(--teal)", fontSize: 12, fontWeight: 700 }}>◈ MEDSIGNAL</span>
                 <div style={{ marginTop: 4 }}>{answer.answer}</div>
               </div>
             )}

@@ -23,7 +23,7 @@ const LANGS = [
 const BCP = { en: "en-US", es: "es-ES", zh: "zh-CN", fr: "fr-FR", hi: "hi-IN", ar: "ar-SA", pt: "pt-PT", vi: "vi-VN" };
 const CHAT_COPY = {
   en: {
-    title: "CareTrace is with you",
+    title: "MedSignal is with you",
     subtitle: "Calm, plain answers in your language — on this device.",
     greeting: (name) => `Hi ${name}. Ask me anything about your care — I'll answer in your language.`,
     suggestions: ["What's happening to me?", "Why am I here?", "What are my medications for?", "Is it serious?"],
@@ -31,7 +31,7 @@ const CHAT_COPY = {
     send: "Send",
   },
   es: {
-    title: "CareTrace está contigo",
+    title: "MedSignal está contigo",
     subtitle: "Respuestas claras y tranquilas en tu idioma — en este dispositivo.",
     greeting: (name) => `Hola ${name}. Pregúntame lo que quieras sobre tu atención; te responderé en español.`,
     suggestions: ["¿Qué me está pasando?", "¿Por qué estoy aquí?", "¿Para qué son mis medicamentos?", "¿Es grave?"],
@@ -129,7 +129,7 @@ export default function PatientHome() {
       <div className="ph-top">
         <div className="row" style={{ gap: 10 }}>
           <span style={{ color: "var(--teal)", fontSize: 20 }}>◈</span>
-          <b>CareTrace</b>
+          <b>MedSignal</b>
           <span className="muted" style={{ fontSize: 13 }}>· {me.name?.split(" ")[0]}</span>
         </div>
         <div className="row" style={{ gap: 12 }}>
@@ -198,11 +198,11 @@ function HomeTab({ me, lang, day, dayBusy, loadDay }) {
   async function send(text) {
     const msg = text ?? input;
     if (!msg.trim()) return;
-    // User bubble + an empty CareTrace bubble that streams tokens as they arrive.
-    setMessages((m) => [...m, { from: "me", text: msg }, { from: "confide", text: "" }]);
+    // User bubble + an empty MedSignal bubble that streams tokens as they arrive.
+    setMessages((m) => [...m, { from: "me", text: msg }, { from: "assistant", text: "" }]);
     setInput(""); setBusy(true);
     const fill = (t) => setMessages((m) => {
-      const c = [...m]; c[c.length - 1] = { from: "confide", text: t }; return c;
+      const c = [...m]; c[c.length - 1] = { from: "assistant", text: t }; return c;
     });
     try {
       const full = await api.patientChatStream(me.patient_id, msg, fill, lang);
@@ -224,16 +224,16 @@ function HomeTab({ me, lang, day, dayBusy, loadDay }) {
         </div>
         <div className="ph-messages" ref={scrollRef}>
           {messages.length === 0 && (
-            <div className="bubble confide">{copy.greeting(me.name?.split(" ")[0])}</div>
+            <div className="bubble assistant">{copy.greeting(me.name?.split(" ")[0])}</div>
           )}
           {messages.map((m, i) => (
             <div key={i} className={`bubble ${m.from}`}>
-              {m.from === "confide" && !m.text ? (
+              {m.from === "assistant" && !m.text ? (
                 <span className="typing"><i /><i /><i /></span>
               ) : (
                 <>
                   {m.text}
-                  {m.from === "confide" && (
+                  {m.from === "assistant" && (
                     <button className="bubble-speak" onClick={() => speak(m.text, lang)} title="Read aloud">🔊</button>
                   )}
                 </>
@@ -294,7 +294,7 @@ function HomeTab({ me, lang, day, dayBusy, loadDay }) {
         .ph-messages { flex:1; overflow-y:auto; padding:18px; display:flex; flex-direction:column; gap:10px; }
         .bubble { max-width:82%; padding:12px 15px; border-radius:16px; font-size:15px; line-height:1.55; animation:fadeUp 0.3s ease both; }
         .bubble.me { align-self:flex-end; background:var(--panel-hi); border:1px solid var(--line); border-bottom-right-radius:4px; }
-        .bubble.confide { align-self:flex-start; background:linear-gradient(180deg,rgba(47,230,200,0.1),rgba(47,230,200,0.04));
+        .bubble.assistant { align-self:flex-start; background:linear-gradient(180deg,rgba(47,230,200,0.1),rgba(47,230,200,0.04));
           border:1px solid var(--teal-dim); border-bottom-left-radius:4px; }
         .typing { display:inline-flex; gap:4px; }
         .typing i { width:7px; height:7px; border-radius:50%; background:var(--teal); animation:blink 1.2s infinite; }

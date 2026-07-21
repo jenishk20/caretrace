@@ -68,7 +68,7 @@ export default function DischargeView({ pid, staff }) {
       <div className="muted" style={{ fontSize: 13 }}>Discharge Navigator · Hear + Watch</div>
       <h1 style={{ fontSize: 26, letterSpacing: "-0.02em", marginBottom: 4 }}>The going-home plan</h1>
       <p className="muted" style={{ marginBottom: 20 }}>
-        CareTrace explains the discharge sheet, pulls out the red-flag symptoms, and checks anything the
+        MedSignal explains the discharge sheet, pulls out the red-flag symptoms, and checks anything the
         patient mentions against them — flagging what's urgent.
       </p>
 

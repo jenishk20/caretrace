@@ -63,7 +63,7 @@ export default function HandoffView({ pid, staff }) {
           {brief && (
             <div className="fade-up">
               <div className="brief">
-                <span style={{ color: "var(--teal)", fontSize: 12, fontWeight: 700 }}>◈ CONFIDE</span>
+                <span style={{ color: "var(--teal)", fontSize: 12, fontWeight: 700 }}>◈ MEDSIGNAL</span>
                 <div style={{ marginTop: 6, fontSize: 15, lineHeight: 1.6 }}>{brief.briefing}</div>
               </div>
               {brief.open_alerts?.length > 0 && (

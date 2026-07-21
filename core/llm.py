@@ -1,6 +1,6 @@
 """Thin GPT-OSS-via-Ollama wrapper. The *only* place that talks to the model.
 
-CareTrace's hard rule: GPT-OSS is the language layer, never the decision-maker. It
+MedSignal's hard rule: GPT-OSS is the language layer, never the decision-maker. It
 extracts structured facts and phrases sentences. All clinical judgment lives in
 code (see core/guardian.py). So this module offers two things: free-text asks
 and strict JSON extraction.
@@ -105,7 +105,7 @@ def model_status() -> dict | None:
         return None
     return None
 
-log = logging.getLogger("caretrace.llm")
+log = logging.getLogger("medsignal.llm")
 if not log.handlers:
     _h = logging.StreamHandler()
     _h.setFormatter(logging.Formatter("%(message)s"))

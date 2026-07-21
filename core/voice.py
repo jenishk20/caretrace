@@ -1,6 +1,6 @@
 """Local voice: speech-to-text (faster-whisper) and text-to-speech (Piper).
 
-Both are lazy-loaded and fail soft. Every "spoken" interaction in Confide also
+Both are lazy-loaded and fail soft. Every "spoken" interaction in MedSignal also
 accepts typed text, so a mic/model hiccup never breaks a live demo.
 """
 from __future__ import annotations

@@ -30,6 +30,27 @@ def test_text_run_creates_encounter_and_returns_bundle(patient, monkeypatch):
     assert run["source_kind"] == "round"
 
 
+def test_async_run_returns_encounter_then_exposes_actual_trace(patient, monkeypatch):
+    def fake_run(ctx, text, input_kind):
+        bundle = {"encounter_id": ctx.encounter_id, "trace": [{"tool": "extract_note_and_facts", "status": "ok"}],
+                  "note": None, "new_nodes": [], "alerts": [], "codes": [], "handoff": None,
+                  "patient_summary": None, "staged_orders": []}
+        repo.update_agent_run(ctx.encounter_id, trace=bundle["trace"], bundle=bundle, status="draft")
+        return bundle
+
+    monkeypatch.setattr(core_agent, "run_agent", fake_run)
+    client = TestClient(application.app)
+
+    started = client.post("/api/agent/run", json={
+        "patient_id": patient["id"], "input_kind": "text", "text": "round", "async_run": True,
+    })
+
+    assert started.status_code == 202
+    run = client.get(f"/api/agent/runs/{started.json()['encounter_id']}")
+    assert run.status_code == 200
+    assert run.json()["trace"] == [{"tool": "extract_note_and_facts", "status": "ok"}]
+
+
 def test_run_rejects_missing_input_and_unknown_patient(patient):
     client = TestClient(application.app)
     missing = client.post("/api/agent/run", json={"patient_id": patient["id"], "input_kind": "text"})

@@ -12,7 +12,22 @@ def test_route_scorer_penalizes_missing_required_tools():
         "recall": 2 / 3,
         "missing": ["run_guardian"],
         "actual": ["extract_note_and_facts", "ingest_facts"],
+        "out_of_order": False,
     }
+
+
+def test_route_scorer_rejects_mandatory_tools_in_wrong_order():
+    score = score_agent_route(
+        ["extract_note_and_facts", "ingest_facts", "run_guardian"],
+        [
+            {"tool": "extract_note_and_facts", "status": "ok"},
+            {"tool": "run_guardian", "status": "ok"},
+            {"tool": "ingest_facts", "status": "ok"},
+        ],
+    )
+
+    assert score["passed"] is False
+    assert score["out_of_order"] is True
 
 
 def test_code_scorer_requires_precision_recall_and_validation():

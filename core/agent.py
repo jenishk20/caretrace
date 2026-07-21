@@ -97,14 +97,22 @@ def _correction_targets(ctx: ToolContext, fact: dict) -> list[dict]:
 def ingest_facts(ctx: ToolContext, facts: list[dict] | None = None) -> dict:
     facts = facts if facts is not None else ctx.last_facts
     new_nodes = graph.ingest_facts(ctx.patient_id, facts or [], ctx.source_kind, ctx.encounter_id)
-    superseded_ids = []
-    for fact, new_node in zip(facts or [], new_nodes):
+    staged_cancellations = []
+    correction_nodes = iter(new_nodes)
+    for fact in facts or []:
+        audit_node = next(correction_nodes, None)
         for target in _correction_targets(ctx, fact):
-            graph.supersede_node(target["id"])
-            graph.add_edge(ctx.patient_id, new_node["id"], target["id"], "relates_to", "correction supersedes prior order")
-            superseded_ids.append(target["id"])
+            if audit_node:
+                graph.add_edge(ctx.patient_id, audit_node["id"], target["id"], "relates_to", "correction proposes cancellation")
+            staged_cancellations.append({
+                "node_id": target["id"], "label": target["label"], "type": target["ntype"],
+                "proposed_action": "cancel",
+            })
     ctx.new_nodes.extend(new_nodes)
-    return {"new_nodes": new_nodes, "superseded_node_ids": superseded_ids}
+    if staged_cancellations:
+        existing = ctx.artifacts.setdefault("staged_cancellations", [])
+        existing.extend(item for item in staged_cancellations if item not in existing)
+    return {"new_nodes": new_nodes, "staged_cancellations": staged_cancellations}
 
 
 def run_guardian(ctx: ToolContext) -> dict:
@@ -128,6 +136,10 @@ CONTEXT: {graph.context_text(ctx.patient_id)}"""
     data = llm.ask_json(prompt, system="Extract coding candidates only; code validates every result.",
                         effort=REASONING_EFFORT_LOW)
     proposed = data.get("codes", []) if isinstance(data, dict) else []
+    documented_record = "\n".join((
+        json.dumps(note, ensure_ascii=False),
+        graph.context_text(ctx.patient_id),
+    )).casefold()
     codes = []
     rejected = []
     for item in proposed:
@@ -138,7 +150,14 @@ CONTEXT: {graph.context_text(ctx.patient_id)}"""
                 "reason": "not in curated tables",
             })
             continue
-        codes.append({**details, "evidence": str(item.get("evidence") or ""), "validated": True})
+        evidence = str(item.get("evidence") or "").strip()
+        if not evidence or evidence.casefold() not in documented_record:
+            rejected.append({
+                "system": item.get("system"), "code": item.get("code"),
+                "reason": "evidence not in documented record",
+            })
+            continue
+        codes.append({**details, "evidence": evidence, "validated": True})
     ctx.artifacts["codes"] = codes
     return {"codes": codes, "rejected": rejected}
 
@@ -251,11 +270,13 @@ def build_bundle(ctx: ToolContext) -> dict:
         implicated.update(raw)
     staged_orders = []
     for node in ctx.new_nodes:
-        if node.get("ntype") in ("medication", "lab_order", "procedure"):
+        if node.get("source_kind") != "correction" and node.get("ntype") in ("medication", "lab_order", "procedure"):
             staged_orders.append({
                 "node_id": node["id"], "label": node["label"], "type": node["ntype"],
                 "flagged": node["id"] in implicated,
             })
+    for cancellation in ctx.artifacts.get("staged_cancellations", []):
+        staged_orders.append({**cancellation, "flagged": cancellation["node_id"] in implicated})
     ctx.artifacts["staged_orders"] = staged_orders
     return {
         "encounter_id": ctx.encounter_id,
@@ -268,6 +289,38 @@ def build_bundle(ctx: ToolContext) -> dict:
         "patient_summary": ctx.artifacts.get("patient_summary"),
         "staged_orders": staged_orders,
     }
+
+
+def _successful_trace_index(trace: list[dict], tool: str) -> int:
+    return max((index for index, event in enumerate(trace)
+                if event.get("tool") == tool and event.get("status") == "ok"), default=-1)
+
+
+def _append_trace(ctx: ToolContext, event: dict) -> None:
+    """Persist each public tool event so a running review screen can poll it."""
+    ctx.trace.append(event)
+    if ctx.encounter_id is not None and repo.get_agent_run(ctx.encounter_id):
+        repo.update_agent_run(ctx.encounter_id, trace=ctx.trace)
+
+
+def _complete_safety_postconditions(ctx: ToolContext) -> None:
+    """Recover from a prematurely-ended model turn without trusting it for safety."""
+    if ctx.last_facts and _successful_trace_index(ctx.trace, "ingest_facts") == -1:
+        result = ingest_facts(ctx)
+        _append_trace(ctx, {
+            "tool": "ingest_facts", "args": {}, "status": "ok", "recovery": True,
+            "result_summary": _result_summary(result),
+        })
+    if ctx.source_kind == "correction" or not ctx.new_nodes:
+        return
+    ingest_index = _successful_trace_index(ctx.trace, "ingest_facts")
+    guardian_index = _successful_trace_index(ctx.trace, "run_guardian")
+    if ingest_index >= 0 and guardian_index <= ingest_index:
+        result = run_guardian(ctx)
+        _append_trace(ctx, {
+            "tool": "run_guardian", "args": {}, "status": "ok", "recovery": True,
+            "result_summary": _result_summary(result),
+        })
 
 
 def run_agent(ctx: ToolContext, model_input_text: str, input_kind: str) -> dict:
@@ -295,12 +348,12 @@ def run_agent(ctx: ToolContext, model_input_text: str, input_kind: str) -> dict:
             try:
                 result = _execute_tool(ctx, name, arguments)
                 summary = _result_summary(result)
-                ctx.trace.append({"tool": name, "args": arguments, "status": "ok", "result_summary": summary})
+                _append_trace(ctx, {"tool": name, "args": arguments, "status": "ok", "result_summary": summary})
                 tool_payload = {"ok": True, "result": result}
                 used_tool = True
             except Exception as exc:
                 summary = {"error": str(exc)}
-                ctx.trace.append({"tool": name, "args": arguments, "status": "error", "result_summary": summary})
+                _append_trace(ctx, {"tool": name, "args": arguments, "status": "error", "result_summary": summary})
                 tool_payload = {"ok": False, "error": str(exc)}
             messages.append({
                 "role": "tool", "tool_name": name,
@@ -310,22 +363,23 @@ def run_agent(ctx: ToolContext, model_input_text: str, input_kind: str) -> dict:
         for name, arguments in _fallback_route(ctx, input_kind):
             try:
                 result = _execute_tool(ctx, name, arguments)
-                ctx.trace.append({"tool": name, "args": arguments, "status": "ok",
-                                  "fallback": True, "result_summary": _result_summary(result)})
+                _append_trace(ctx, {"tool": name, "args": arguments, "status": "ok",
+                                    "fallback": True, "result_summary": _result_summary(result)})
                 if name == "extract_note_and_facts" and input_kind in ("image", "document"):
                     for fact in ctx.last_facts:
                         if fact.get("ntype") != "medication":
                             continue
                         reconcile_args = {"drug": fact.get("label", "")}
                         reconciliation = _execute_tool(ctx, "reconcile_medication", reconcile_args)
-                        ctx.trace.append({
+                        _append_trace(ctx, {
                             "tool": "reconcile_medication", "args": reconcile_args,
                             "status": "ok", "fallback": True,
                             "result_summary": _result_summary(reconciliation),
                         })
             except Exception as exc:
-                ctx.trace.append({"tool": name, "args": arguments, "status": "error",
-                                  "fallback": True, "result_summary": {"error": str(exc)}})
+                _append_trace(ctx, {"tool": name, "args": arguments, "status": "error",
+                                    "fallback": True, "result_summary": {"error": str(exc)}})
+    _complete_safety_postconditions(ctx)
     bundle = build_bundle(ctx)
     if ctx.encounter_id is not None and repo.get_agent_run(ctx.encounter_id):
         repo.update_agent_run(
@@ -340,8 +394,14 @@ def approve_run(patient_id: int, encounter_id: int, approvals: dict) -> dict:
     run = repo.get_agent_run(encounter_id)
     if not run or run["patient_id"] != patient_id:
         raise ValueError("agent run not found for patient")
+    if run["status"] == "approved":
+        return {"encounter_id": encounter_id, "committed": run["bundle"].get("approval", {})}
+    if run["status"] != "draft":
+        raise ValueError("agent run is not ready for approval")
     bundle = run["bundle"]
-    committed: dict[str, Any] = {"codes": [], "orders": []}
+    encounter = repo.get_encounter(encounter_id) or {}
+    staff_id = encounter.get("staff_id")
+    committed: dict[str, Any] = {"codes": [], "orders": [], "requested": approvals}
     if approvals.get("sign_note") and bundle.get("note"):
         committed["note"] = repo.sign_encounter_note(encounter_id, bundle["note"])
     approved_keys = {(item.get("system"), item.get("code")) for item in approvals.get("codes", [])}
@@ -350,12 +410,12 @@ def approve_run(patient_id: int, encounter_id: int, approvals: dict) -> dict:
     if approvals.get("handoff") and bundle.get("handoff"):
         h = bundle["handoff"]
         committed["handoff"] = repo.create_handoff(
-            patient_id, None, h.get("situation"), h.get("background"), h.get("assessment"),
+            patient_id, staff_id, h.get("situation"), h.get("background"), h.get("assessment"),
             h.get("recommendation"), h.get("priority_note"), [encounter_id],
         )
     if approvals.get("send_summary") and bundle.get("patient_summary"):
         committed["patient_summary"] = repo.create_document(
-            patient_id, None, "patient_summary", explanation=bundle["patient_summary"]
+            patient_id, staff_id, "patient_summary", explanation=bundle["patient_summary"]
         )
     staged = {str(item["node_id"]): item for item in bundle.get("staged_orders", [])}
     for raw_id, action in (approvals.get("orders") or {}).items():

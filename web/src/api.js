@@ -84,6 +84,7 @@ export const api = {
 
   // dynamic workflow agent
   runAgent: (data) => req("/api/agent/run", { method: "POST", body: data }),
+  startAgent: (data) => req("/api/agent/run", { method: "POST", body: { ...data, async_run: true } }),
   uploadAgentImage: (file) => {
     const form = new FormData();
     form.append("image", file, file.name || "capture.png");
@@ -91,6 +92,7 @@ export const api = {
   },
   approveAgent: (data) => req("/api/agent/approve", { method: "POST", body: data }),
   agentTrace: (encounterId) => req(`/api/agent/runs/${encounterId}/trace`),
+  agentRun: (encounterId) => req(`/api/agent/runs/${encounterId}`),
   agentRuns: (patientId, limit = 3) => req(`/api/patients/${patientId}/agent-runs?limit=${limit}`),
   patientRoi: (patientId) => req(`/api/patients/${patientId}/roi`),
 

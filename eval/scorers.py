@@ -4,9 +4,25 @@ from __future__ import annotations
 
 def score_agent_route(expected_tools: list[str], trace: list[dict]) -> dict:
     actual = [event.get("tool") for event in trace if event.get("tool")]
-    missing = [tool for tool in expected_tools if tool not in actual]
+    successful = [event.get("tool") for event in trace if event.get("tool") and event.get("status") in (None, "ok")]
+    missing = [tool for tool in expected_tools if tool not in successful]
     recall = (len(expected_tools) - len(missing)) / len(expected_tools) if expected_tools else 1.0
-    return {"passed": not missing, "recall": recall, "missing": missing, "actual": actual}
+    previous = -1
+    out_of_order = False
+    for tool in expected_tools:
+        try:
+            next_index = successful.index(tool, previous + 1)
+        except ValueError:
+            out_of_order = not missing
+            break
+        previous = next_index
+    return {
+        "passed": not missing and not out_of_order,
+        "recall": recall,
+        "missing": missing,
+        "actual": actual,
+        "out_of_order": out_of_order,
+    }
 
 
 def score_codes(expected_codes: list[str], actual_codes: list[dict]) -> dict:

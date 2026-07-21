@@ -62,13 +62,29 @@ def _language_json(prompt: str, **_kwargs):
     }
 
 
+def _scripted_tool_turn(case: dict) -> dict:
+    arguments = {
+        "reconcile_medication": {"drug": "ketorolac"},
+        "draft_patient_summary": {"language": "es"},
+    }
+    return {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+            {"id": f"call_{index}", "function": {"name": tool, "arguments": arguments.get(tool, {})}}
+            for index, tool in enumerate(case["expected_tools"])
+        ],
+    }
+
+
 def evaluate_agent_case(case: dict) -> dict:
     with temp_db():
         patient = seeded_maria()
         if case["input_kind"] == "text":
             graph.add_node(patient["id"], "lab_order", "Repeat EKG", source_kind="round")
         original = (llm.ask_tools, graph.structure_and_extract, llm.ask_json, llm.ask)
-        llm.ask_tools = lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("force repeatable fallback"))
+        calls = iter([_scripted_tool_turn(case), {"role": "assistant", "content": "Complete.", "tool_calls": []}])
+        llm.ask_tools = lambda *args, **kwargs: next(calls)
         graph.structure_and_extract = lambda _text: _facts(case)
         llm.ask_json = _language_json
         llm.ask = lambda *args, **kwargs: "Resumen claro para la paciente."

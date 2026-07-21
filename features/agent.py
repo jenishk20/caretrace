@@ -4,7 +4,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Literal
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from core import agent as core_agent
@@ -22,6 +23,7 @@ class AgentRunRequest(BaseModel):
     image_path: str | None = None
     text: str | None = None
     language: str | None = None
+    async_run: bool = False
 
 
 class ApprovalRequest(BaseModel):
@@ -44,7 +46,7 @@ def _media_path(raw_path: str | None, field_name: str) -> str | None:
 
 
 @router.post("/api/agent/run")
-def run(body: AgentRunRequest):
+def run(body: AgentRunRequest, background_tasks: BackgroundTasks):
     patient = repo.get_patient(body.patient_id)
     if not patient:
         raise HTTPException(404, "Patient not found")
@@ -77,6 +79,12 @@ def run(body: AgentRunRequest):
         source_kind=source_kind,
         language=language,
     )
+    if body.async_run:
+        background_tasks.add_task(core_agent.run_agent, context, text, normalized_kind)
+        return JSONResponse(
+            status_code=202,
+            content={"encounter_id": encounter["id"], "status": "running"},
+        )
     return core_agent.run_agent(context, text, normalized_kind)
 
 
@@ -106,6 +114,20 @@ def trace(encounter_id: int):
         return {"encounter_id": encounter_id, "trace": core_agent.get_trace(encounter_id)}
     except ValueError as exc:
         raise HTTPException(404, str(exc)) from exc
+
+
+@router.get("/api/agent/runs/{encounter_id}")
+def run_status(encounter_id: int):
+    run = repo.get_agent_run(encounter_id)
+    if not run:
+        raise HTTPException(404, "Agent run not found")
+    return {
+        "encounter_id": encounter_id,
+        "status": run["status"],
+        "trace": run["trace"],
+        "bundle": run["bundle"],
+        "latency_ms": run["latency_ms"],
+    }
 
 
 @router.get("/api/patients/{patient_id}/agent-runs")

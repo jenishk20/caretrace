@@ -15,19 +15,18 @@ GPT-5.6 and Codex were used during development. They are not part of the runtime
 
 ## Local clinical workflow agent
 
-One clinician input creates a reviewable draft bundle without sending data to a cloud service:
+One clinician input becomes a complete, local, clinician-reviewed workflow—without sending patient context to the cloud.
 
 ```text
 speech ── faster-whisper ─┐
-image  ── Tesseract OCR ──┼─> local gpt-oss tool loop ─> clinician review
-text   ───────────────────┘             │
-                                    MedSignal graph + Guardian
+image  ── Tesseract OCR ──┼─> GPT-OSS agent ─> MedSignal graph + Guardian ─> clinician approval
+text   ───────────────────┘
 ```
 
-- A spoken round drafts a note, source-linked facts, Guardian checks, evidence-backed billing candidates, an SBAR handoff, and a patient debrief.
-- A photographed prescription is transcribed by local Tesseract and reconciled against the existing record.
-- A typed correction records an audit-linked correction rather than silently overwriting history.
-- Notes, codes, handoffs, debriefs, reminders, and order actions stay as drafts until a clinician explicitly approves them.
+1. **Capture locally.** A clinician speaks, types, or photographs a prescription. Faster-whisper and Tesseract convert speech and images to text on-device.
+2. **Organize the encounter.** The local GPT-OSS agent extracts source-linked facts, updates the patient graph, and prepares a reviewable bundle: clinical note, safety checks, billing candidates, SBAR handoff, and patient explanation.
+3. **Verify in code.** Guardian applies deterministic rules to detect medication risks, contradictions, and incomplete follow-ups. The model never makes the safety decision.
+4. **Keep the clinician in control.** Every note, code, handoff, patient summary, reminder, and order action remains a draft until explicitly approved. Corrections are audit-linked; nothing is silently overwritten.
 
 ## Patient knowledge graph
 
@@ -54,7 +53,7 @@ MedSignal keeps an evidence-linked local graph of each patient's recorded facts,
 - `web/src/views/AgentRunView.jsx` — unified clinician capture and approval workflow.
 - `eval/agent_eval.py` — repeatable route, cross-modal safety, and coding validation checks.
 
-## Judge setup — run MedSignal locally
+## Run MedSignal locally
 
 **Supported demo platform:** macOS with Apple Silicon, Python 3.11+, Node 22.12+, Ollama, and Tesseract. The application is local-first: no OpenAI API key or cloud account is required at runtime.
 

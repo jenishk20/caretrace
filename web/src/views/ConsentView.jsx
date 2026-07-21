@@ -14,6 +14,22 @@ Alternatives: medication management, or coronary bypass surgery.
 
 By signing, you confirm the procedure and its risks were explained and your questions answered.`;
 
+const SPEECH_LOCALE = { en: "en-US", es: "es-ES", zh: "zh-CN", fr: "fr-FR", hi: "hi-IN", ar: "ar-SA", pt: "pt-PT", vi: "vi-VN" };
+
+function speak(text, language) {
+  try {
+    if (!text || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = SPEECH_LOCALE[language] || "en-US";
+    utterance.rate = 0.95;
+    const code = utterance.lang.slice(0, 2).toLowerCase();
+    const voice = window.speechSynthesis.getVoices().find((item) => item.lang?.toLowerCase().startsWith(code));
+    if (voice) utterance.voice = voice;
+    window.speechSynthesis.speak(utterance);
+  } catch { /* Browser speech is an optional local convenience. */ }
+}
+
 export default function ConsentView({ pid, staff, patient }) {
   const [doc, setDoc] = useState(null);
   const [ocr, setOcr] = useState(SAMPLE);
@@ -21,6 +37,8 @@ export default function ConsentView({ pid, staff, patient }) {
   const [q, setQ] = useState("");
   const [qa, setQa] = useState([]);
   const [asking, setAsking] = useState(false);
+  const language = patient?.primary_language || "en";
+  const languageLabel = language === "es" ? "Español" : language;
 
   useEffect(() => {
     api.consentList(pid).then((forms) => {
@@ -34,6 +52,7 @@ export default function ConsentView({ pid, staff, patient }) {
       const d = await api.consentText({ patient_id: pid, staff_id: staff?.staff_id, ocr_text: ocr });
       setDoc(d);
       setQa([]);
+      speak(d.explanation, language);
     } catch (e) { alert(e.message); } finally { setBusy(false); }
   }
 
@@ -53,6 +72,7 @@ export default function ConsentView({ pid, staff, patient }) {
       const res = await api.consentAsk(doc.id, pid, text);
       setQa((prev) => [...prev, { question: res.question, answer: res.answer }]);
       setQ("");
+      speak(res.answer, language);
     } catch (e) { alert(e.message); } finally { setAsking(false); }
   }
 
@@ -65,7 +85,7 @@ export default function ConsentView({ pid, staff, patient }) {
         evidence they understood, not just a signature.
       </p>
       <div className="soft-note" style={{ marginTop: -8, marginBottom: 20, fontSize: 13 }}>
-        🌐 Uses the patient portal language: <b>{patient?.primary_language === "es" ? "Español" : patient?.primary_language || "English"}</b>.
+        🌐 Uses the patient portal language: <b>{languageLabel}</b>.
         Consent explanations and answers stay in that language.
       </div>
 
@@ -94,6 +114,9 @@ export default function ConsentView({ pid, staff, patient }) {
                 <span style={{ fontSize: 16 }}>◈</span><b>In plain language</b>
               </div>
               <div style={{ fontSize: 15, lineHeight: 1.6 }}>{doc.explanation}</div>
+              <button className="chip" style={{ marginTop: 12 }} onClick={() => speak(doc.explanation, language)}>
+                🔊 {language === "es" ? "Escuchar explicación" : "Read explanation aloud"}
+              </button>
               {doc.suggested_questions?.length > 0 && (
                 <>
                   <div className="sep" />
@@ -116,7 +139,7 @@ export default function ConsentView({ pid, staff, patient }) {
                 {qa.map((item, i) => (
                   <div key={i} className="fade-up">
                     <div className="qa-q">{item.question}</div>
-                    <div className="qa-a">{item.answer}</div>
+                    <div className="qa-a">{item.answer}<button className="qa-speak" onClick={() => speak(item.answer, language)} title="Read aloud">🔊</button></div>
                   </div>
                 ))}
               </div>
@@ -144,6 +167,8 @@ export default function ConsentView({ pid, staff, patient }) {
         .qa-q { font-weight:600; font-size:14px; }
         .qa-a { font-size:14px; color:var(--text-dim); margin-top:3px; padding-left:12px;
           border-left:2px solid var(--teal-dim); line-height:1.55; }
+        .qa-speak { margin-left:8px; font-size:12px; opacity:0.65; vertical-align:middle; }
+        .qa-speak:hover { opacity:1; }
         @media (max-width:960px){ .two-col{grid-template-columns:1fr;} }
       `}</style>
     </div>

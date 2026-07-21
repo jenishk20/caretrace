@@ -18,13 +18,13 @@ def seed() -> None:
         return
 
     maria = repo.create_patient(
-        name="María González",
+        name="María Alvarez",
         staff_id=doctor["id"],
         mrn="MRN-04821",
         age=68,
         room="4B",
         reason_for_visit="Chest pain",
-        primary_language="en",
+        primary_language="es",
         username="maria",
         password="confide",
     )

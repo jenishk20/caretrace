@@ -1,0 +1,8 @@
+cases:
+  - id: maria_round_codes
+    note: Atrial fibrillation documented with moderate decision complexity.
+    proposed:
+      - {system: ICD-10, code: I48.91, evidence: Atrial fibrillation}
+      - {system: CPT, code: '99232', evidence: moderate decision complexity}
+      - {system: ICD-10, code: FAKE.1, evidence: invented candidate}
+    expected_codes: [I48.91, '99232']

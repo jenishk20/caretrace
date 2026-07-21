@@ -1,0 +1,26 @@
+cases:
+  - id: maria_spoken_round
+    input_kind: speech
+    text: Chest pain better, 2/10. Continue warfarin, recheck troponin in 3 hours, repeat EKG, discharge tomorrow if stable.
+    expected_tools:
+      - extract_note_and_facts
+      - ingest_facts
+      - run_guardian
+      - suggest_billing_codes
+      - draft_handoff
+      - draft_patient_summary
+  - id: maria_photographed_ketorolac
+    input_kind: document
+    text: KETOROLAC 10 MG. Take one tablet every 6 hours as needed.
+    expected_tools:
+      - extract_note_and_facts
+      - reconcile_medication
+      - ingest_facts
+      - run_guardian
+    expected_critical_alert: true
+  - id: maria_typed_correction
+    input_kind: text
+    text: cancel the EKG
+    expected_tools:
+      - extract_note_and_facts
+      - ingest_facts

@@ -1,321 +1,84 @@
 {
-  "generated_at": "2026-07-21T02:13:27+00:00",
-  "model": "gpt-oss:20b",
-  "model_available": false,
-  "summary": {
-    "guardian": {
-      "passed": 9,
-      "total": 9,
-      "recall": 1.0,
-      "precision": 1.0,
-      "confusion": {
-        "tp": 6,
-        "fp": 0,
-        "fn": 0
-      }
-    },
-    "scribe": {
-      "passed": 0,
-      "total": 5,
-      "skipped": true,
-      "reason": "model unavailable"
-    },
-    "discharge": {
-      "passed": 0,
-      "total": 4,
-      "skipped": true,
-      "reason": "model unavailable"
-    },
-    "consent": {
-      "passed": 0,
-      "total": 3,
-      "skipped": true,
-      "reason": "model unavailable"
-    },
-    "handoff": {
-      "passed": 0,
-      "total": 2,
-      "skipped": true,
-      "reason": "model unavailable"
-    },
-    "orientation": {
-      "passed": 0,
-      "total": 2,
-      "skipped": true,
-      "reason": "model unavailable"
-    },
-    "adversarial": {
-      "passed": 0,
-      "total": 2,
-      "skipped": true,
-      "reason": "model unavailable"
-    }
-  },
-  "latency": {
-    "guardian": {
-      "p50": 1,
-      "p95": 2,
-      "n": 6
-    }
-  },
-  "cases": [
+  "generated_at": "2026-07-21T03:04:57+00:00",
+  "passed": true,
+  "agent": [
     {
-      "feature": "guardian",
-      "id": "allergy_penicillin_amoxicillin",
-      "expected": [
-        {
-          "atype": "allergy",
-          "severity": "critical",
-          "labels": "{'Penicillin', 'Amoxicillin'}"
-        }
-      ],
-      "actual": [
-        {
-          "atype": "allergy",
-          "severity": "critical",
-          "labels": "{'Penicillin', 'Amoxicillin'}"
-        }
-      ],
-      "score": {
-        "passed": true,
-        "tp": 1,
-        "fp": 0,
-        "fn": 0,
-        "missing": [],
-        "spurious": 0
-      },
+      "id": "maria_spoken_round",
       "passed": true,
-      "latency_ms": 1
+      "route": {
+        "passed": true,
+        "recall": 1.0,
+        "missing": [],
+        "actual": [
+          "extract_note_and_facts",
+          "ingest_facts",
+          "run_guardian",
+          "suggest_billing_codes",
+          "draft_handoff",
+          "draft_patient_summary"
+        ]
+      },
+      "critical_alert": false
     },
     {
-      "feature": "guardian",
-      "id": "crossreact_penicillin_cephalexin",
-      "expected": [
-        {
-          "atype": "allergy",
-          "severity": "critical",
-          "labels": "{'Penicillin', 'Cephalexin'}"
-        }
-      ],
-      "actual": [
-        {
-          "atype": "allergy",
-          "severity": "critical",
-          "labels": "{'Penicillin', 'Cephalexin'}"
-        }
-      ],
-      "score": {
-        "passed": true,
-        "tp": 1,
-        "fp": 0,
-        "fn": 0,
-        "missing": [],
-        "spurious": 0
-      },
+      "id": "maria_photographed_ketorolac",
       "passed": true,
-      "latency_ms": 2
+      "route": {
+        "passed": true,
+        "recall": 1.0,
+        "missing": [],
+        "actual": [
+          "extract_note_and_facts",
+          "reconcile_medication",
+          "ingest_facts",
+          "run_guardian"
+        ]
+      },
+      "critical_alert": true
     },
     {
-      "feature": "guardian",
-      "id": "interaction_warfarin_ibuprofen",
-      "expected": [
-        {
-          "atype": "interaction",
-          "severity": "critical",
-          "labels": "{'Warfarin', 'Ibuprofen'}"
-        }
-      ],
-      "actual": [
-        {
-          "atype": "interaction",
-          "severity": "critical",
-          "labels": "{'Ibuprofen', 'Warfarin'}"
-        }
-      ],
-      "score": {
-        "passed": true,
-        "tp": 1,
-        "fp": 0,
-        "fn": 0,
-        "missing": [],
-        "spurious": 0
-      },
+      "id": "maria_typed_correction",
       "passed": true,
-      "latency_ms": 1
-    },
-    {
-      "feature": "guardian",
-      "id": "interaction_opioid_benzo",
-      "expected": [
-        {
-          "atype": "interaction",
-          "severity": "critical",
-          "labels": "{'Morphine', 'Lorazepam'}"
-        }
-      ],
-      "actual": [
-        {
-          "atype": "interaction",
-          "severity": "critical",
-          "labels": "{'Morphine', 'Lorazepam'}"
-        }
-      ],
-      "score": {
+      "route": {
         "passed": true,
-        "tp": 1,
-        "fp": 0,
-        "fn": 0,
+        "recall": 1.0,
         "missing": [],
-        "spurious": 0
+        "actual": [
+          "extract_note_and_facts",
+          "ingest_facts"
+        ]
       },
-      "passed": true,
-      "latency_ms": 1
-    },
-    {
-      "feature": "guardian",
-      "id": "interaction_ace_nsaid",
-      "expected": [
-        {
-          "atype": "interaction",
-          "severity": "warning",
-          "labels": "{'Naproxen', 'Lisinopril'}"
-        }
-      ],
-      "actual": [
-        {
-          "atype": "interaction",
-          "severity": "warning",
-          "labels": "{'Naproxen', 'Lisinopril'}"
-        }
-      ],
-      "score": {
-        "passed": true,
-        "tp": 1,
-        "fp": 0,
-        "fn": 0,
-        "missing": [],
-        "spurious": 0
-      },
-      "passed": true,
-      "latency_ms": 2
-    },
-    {
-      "feature": "guardian",
-      "id": "no_conflict_statin_alone",
-      "expected": [],
-      "actual": [],
-      "score": {
-        "passed": true,
-        "tp": 0,
-        "fp": 0,
-        "fn": 0,
-        "missing": [],
-        "spurious": 0
-      },
-      "passed": true,
-      "latency_ms": 0
-    },
-    {
-      "feature": "guardian",
-      "id": "no_conflict_unrelated_pair",
-      "expected": [],
-      "actual": [],
-      "score": {
-        "passed": true,
-        "tp": 0,
-        "fp": 0,
-        "fn": 0,
-        "missing": [],
-        "spurious": 0
-      },
-      "passed": true,
-      "latency_ms": 0
-    },
-    {
-      "feature": "guardian",
-      "id": "contradiction_denies_warfarin",
-      "expected": [
-        {
-          "atype": "contradiction",
-          "severity": "warning",
-          "labels": "{'Warfarin', 'Denies blood thinners'}"
-        }
-      ],
-      "actual": [
-        {
-          "atype": "contradiction",
-          "severity": "warning",
-          "labels": "{'Warfarin', 'Denies blood thinners'}"
-        }
-      ],
-      "score": {
-        "passed": true,
-        "tp": 1,
-        "fp": 0,
-        "fn": 0,
-        "missing": [],
-        "spurious": 0
-      },
-      "passed": true,
-      "latency_ms": 1
-    },
-    {
-      "feature": "guardian",
-      "id": "no_contradiction_when_consistent",
-      "expected": [],
-      "actual": [],
-      "score": {
-        "passed": true,
-        "tp": 0,
-        "fp": 0,
-        "fn": 0,
-        "missing": [],
-        "spurious": 0
-      },
-      "passed": true,
-      "latency_ms": 0
+      "critical_alert": false
     }
   ],
-  "bugs": [
+  "coding": [
     {
-      "id": "grounding_false_negative_on_refusal",
-      "title": "Eval scorer false-failed honest refusals",
-      "status": "fixed",
-      "symptom": "consent 'anesthesia_question' failed even though Gemma correctly said the form doesn't state whether the patient is asleep.",
-      "root_cause": "score_grounding used token overlap only; an answer ABOUT the absence of info naturally shares few words with the source, so honest refusals looked like hallucinations.",
-      "fix": "Detect refusal phrasing (is_refusal) and treat refusals as non-hallucinating; a refusal now passes grounding."
-    },
-    {
-      "id": "grounding_false_negative_on_paraphrase",
-      "title": "Eval scorer over-penalized faithful paraphrase",
-      "status": "fixed",
-      "symptom": "consent 'alternatives_question' was faithful and grounded but scored 0.35 overlap and failed.",
-      "root_cause": "The overlap threshold (0.5/0.4) was used as a QUALITY bar; paraphrased-but-faithful answers fall below it.",
-      "fix": "Overlap is now a lenient anti-hallucination FLOOR (0.3). Faithfulness/quality is graded separately by the Tier-3 LLM judge."
-    },
-    {
-      "id": "discharge_deflects_out_of_doc",
-      "title": "Discharge Q&A deflected instead of refusing",
-      "status": "fixed",
-      "symptom": "Asked 'Can I drink alcohol with my pain medication?' (not on the sheet), discharge answered with unrelated wound-care/follow-up facts, implying an answer.",
-      "root_cause": "features/discharge.py ANSWER_PROMPT lacked the 'if it isn't addressed, say so plainly' instruction that features/consent.py already has.",
-      "fix": "Added the explicit refusal instruction to the discharge answer prompt. out_of_doc_refusal now reliably refuses."
-    },
-    {
-      "id": "same_batch_interaction_miss",
-      "title": "Same-dictation interaction miss (candidate \u2014 refuted)",
-      "status": "refuted",
-      "symptom": "Hypothesis: two mutually-conflicting drugs in ONE dictation might not cross-check each other.",
-      "root_cause": "Investigated: scribe.capture() persists ALL extracted facts via ingest_facts BEFORE review_new_nodes runs, so each new med sees the other as already-active. Both adversarial cases fire correctly.",
-      "fix": "No change needed \u2014 architecture already handles it. Documented as a verified negative."
-    },
-    {
-      "id": "nondeterministic_pass_fail",
-      "title": "Pass/fail flickered between runs",
-      "status": "fixed",
-      "symptom": "The same model case passed on one run and failed on the next.",
-      "root_cause": "The product decodes at temperature 0.1-0.2, so free-text outputs varied run to run.",
-      "fix": "The eval forces greedy decoding (temperature 0) for evaluated calls, so the suite is repeatable. Two consecutive runs now match exactly."
+      "id": "maria_round_codes",
+      "passed": true,
+      "score": {
+        "passed": true,
+        "precision": 1.0,
+        "recall": 1.0,
+        "missing": [],
+        "unexpected": [],
+        "unvalidated": []
+      },
+      "actual": [
+        {
+          "code": "I48.91",
+          "system": "ICD-10",
+          "label": "Atrial fibrillation, unspecified",
+          "evidence": "Atrial fibrillation",
+          "validated": true
+        },
+        {
+          "code": "99232",
+          "system": "CPT",
+          "label": "Subsequent hospital care, moderate complexity",
+          "evidence": "moderate decision complexity",
+          "validated": true
+        }
+      ]
     }
   ]
 }

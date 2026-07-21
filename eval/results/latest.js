@@ -1,279 +1,101 @@
 window.EVAL_DATA = {
-  "generated_at": "2026-07-21T02:13:27+00:00",
+  "generated_at": "2026-07-21T03:54:16+00:00",
   "model": "gpt-oss:20b",
   "model_available": false,
   "summary": {
-    "guardian": {
-      "passed": 9,
-      "total": 9,
-      "recall": 1.0,
-      "precision": 1.0,
-      "confusion": {
-        "tp": 6,
-        "fp": 0,
-        "fn": 0
-      }
+    "agent": {
+      "passed": 3,
+      "total": 3
     },
-    "scribe": {
-      "passed": 0,
-      "total": 5,
-      "skipped": true,
-      "reason": "model unavailable"
-    },
-    "discharge": {
-      "passed": 0,
-      "total": 4,
-      "skipped": true,
-      "reason": "model unavailable"
-    },
-    "consent": {
-      "passed": 0,
-      "total": 3,
-      "skipped": true,
-      "reason": "model unavailable"
-    },
-    "handoff": {
-      "passed": 0,
-      "total": 2,
-      "skipped": true,
-      "reason": "model unavailable"
-    },
-    "orientation": {
-      "passed": 0,
-      "total": 2,
-      "skipped": true,
-      "reason": "model unavailable"
-    },
-    "adversarial": {
-      "passed": 0,
-      "total": 2,
-      "skipped": true,
-      "reason": "model unavailable"
+    "coding": {
+      "passed": 1,
+      "total": 1
     }
   },
-  "latency": {
-    "guardian": {
-      "p50": 1,
-      "p95": 2,
-      "n": 6
-    }
-  },
+  "latency": {},
   "cases": [
     {
-      "feature": "guardian",
-      "id": "allergy_penicillin_amoxicillin",
-      "expected": [
-        {
-          "atype": "allergy",
-          "severity": "critical",
-          "labels": "{'Penicillin', 'Amoxicillin'}"
-        }
-      ],
+      "feature": "agent",
+      "id": "maria_spoken_round",
+      "passed": true,
+      "route": {
+        "passed": true,
+        "recall": 1.0,
+        "missing": [],
+        "actual": [
+          "extract_note_and_facts",
+          "ingest_facts",
+          "run_guardian",
+          "suggest_billing_codes",
+          "draft_handoff",
+          "draft_patient_summary"
+        ],
+        "out_of_order": false
+      },
+      "critical_alert": false
+    },
+    {
+      "feature": "agent",
+      "id": "maria_photographed_ketorolac",
+      "passed": true,
+      "route": {
+        "passed": true,
+        "recall": 1.0,
+        "missing": [],
+        "actual": [
+          "extract_note_and_facts",
+          "reconcile_medication",
+          "ingest_facts",
+          "run_guardian"
+        ],
+        "out_of_order": false
+      },
+      "critical_alert": true
+    },
+    {
+      "feature": "agent",
+      "id": "maria_typed_correction",
+      "passed": true,
+      "route": {
+        "passed": true,
+        "recall": 1.0,
+        "missing": [],
+        "actual": [
+          "extract_note_and_facts",
+          "ingest_facts"
+        ],
+        "out_of_order": false
+      },
+      "critical_alert": false
+    },
+    {
+      "feature": "coding",
+      "id": "maria_round_codes",
+      "passed": true,
+      "score": {
+        "passed": true,
+        "precision": 1.0,
+        "recall": 1.0,
+        "missing": [],
+        "unexpected": [],
+        "unvalidated": []
+      },
       "actual": [
         {
-          "atype": "allergy",
-          "severity": "critical",
-          "labels": "{'Penicillin', 'Amoxicillin'}"
-        }
-      ],
-      "score": {
-        "passed": true,
-        "tp": 1,
-        "fp": 0,
-        "fn": 0,
-        "missing": [],
-        "spurious": 0
-      },
-      "passed": true,
-      "latency_ms": 1
-    },
-    {
-      "feature": "guardian",
-      "id": "crossreact_penicillin_cephalexin",
-      "expected": [
+          "code": "I48.91",
+          "system": "ICD-10",
+          "label": "Atrial fibrillation, unspecified",
+          "evidence": "Atrial fibrillation",
+          "validated": true
+        },
         {
-          "atype": "allergy",
-          "severity": "critical",
-          "labels": "{'Penicillin', 'Cephalexin'}"
+          "code": "99232",
+          "system": "CPT",
+          "label": "Subsequent hospital care, moderate complexity",
+          "evidence": "moderate decision complexity",
+          "validated": true
         }
-      ],
-      "actual": [
-        {
-          "atype": "allergy",
-          "severity": "critical",
-          "labels": "{'Penicillin', 'Cephalexin'}"
-        }
-      ],
-      "score": {
-        "passed": true,
-        "tp": 1,
-        "fp": 0,
-        "fn": 0,
-        "missing": [],
-        "spurious": 0
-      },
-      "passed": true,
-      "latency_ms": 2
-    },
-    {
-      "feature": "guardian",
-      "id": "interaction_warfarin_ibuprofen",
-      "expected": [
-        {
-          "atype": "interaction",
-          "severity": "critical",
-          "labels": "{'Warfarin', 'Ibuprofen'}"
-        }
-      ],
-      "actual": [
-        {
-          "atype": "interaction",
-          "severity": "critical",
-          "labels": "{'Ibuprofen', 'Warfarin'}"
-        }
-      ],
-      "score": {
-        "passed": true,
-        "tp": 1,
-        "fp": 0,
-        "fn": 0,
-        "missing": [],
-        "spurious": 0
-      },
-      "passed": true,
-      "latency_ms": 1
-    },
-    {
-      "feature": "guardian",
-      "id": "interaction_opioid_benzo",
-      "expected": [
-        {
-          "atype": "interaction",
-          "severity": "critical",
-          "labels": "{'Morphine', 'Lorazepam'}"
-        }
-      ],
-      "actual": [
-        {
-          "atype": "interaction",
-          "severity": "critical",
-          "labels": "{'Morphine', 'Lorazepam'}"
-        }
-      ],
-      "score": {
-        "passed": true,
-        "tp": 1,
-        "fp": 0,
-        "fn": 0,
-        "missing": [],
-        "spurious": 0
-      },
-      "passed": true,
-      "latency_ms": 1
-    },
-    {
-      "feature": "guardian",
-      "id": "interaction_ace_nsaid",
-      "expected": [
-        {
-          "atype": "interaction",
-          "severity": "warning",
-          "labels": "{'Naproxen', 'Lisinopril'}"
-        }
-      ],
-      "actual": [
-        {
-          "atype": "interaction",
-          "severity": "warning",
-          "labels": "{'Naproxen', 'Lisinopril'}"
-        }
-      ],
-      "score": {
-        "passed": true,
-        "tp": 1,
-        "fp": 0,
-        "fn": 0,
-        "missing": [],
-        "spurious": 0
-      },
-      "passed": true,
-      "latency_ms": 2
-    },
-    {
-      "feature": "guardian",
-      "id": "no_conflict_statin_alone",
-      "expected": [],
-      "actual": [],
-      "score": {
-        "passed": true,
-        "tp": 0,
-        "fp": 0,
-        "fn": 0,
-        "missing": [],
-        "spurious": 0
-      },
-      "passed": true,
-      "latency_ms": 0
-    },
-    {
-      "feature": "guardian",
-      "id": "no_conflict_unrelated_pair",
-      "expected": [],
-      "actual": [],
-      "score": {
-        "passed": true,
-        "tp": 0,
-        "fp": 0,
-        "fn": 0,
-        "missing": [],
-        "spurious": 0
-      },
-      "passed": true,
-      "latency_ms": 0
-    },
-    {
-      "feature": "guardian",
-      "id": "contradiction_denies_warfarin",
-      "expected": [
-        {
-          "atype": "contradiction",
-          "severity": "warning",
-          "labels": "{'Warfarin', 'Denies blood thinners'}"
-        }
-      ],
-      "actual": [
-        {
-          "atype": "contradiction",
-          "severity": "warning",
-          "labels": "{'Warfarin', 'Denies blood thinners'}"
-        }
-      ],
-      "score": {
-        "passed": true,
-        "tp": 1,
-        "fp": 0,
-        "fn": 0,
-        "missing": [],
-        "spurious": 0
-      },
-      "passed": true,
-      "latency_ms": 1
-    },
-    {
-      "feature": "guardian",
-      "id": "no_contradiction_when_consistent",
-      "expected": [],
-      "actual": [],
-      "score": {
-        "passed": true,
-        "tp": 0,
-        "fp": 0,
-        "fn": 0,
-        "missing": [],
-        "spurious": 0
-      },
-      "passed": true,
-      "latency_ms": 0
+      ]
     }
   ],
   "bugs": [

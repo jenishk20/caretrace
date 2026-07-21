@@ -310,5 +310,7 @@ if (WEB_DIST / "assets").exists():
 def spa(full_path: str):
     index = WEB_DIST / "index.html"
     if index.exists():
-        return FileResponse(str(index))
+        # Keep the HTML entry point fresh so an already-open local browser picks
+        # up the latest hashed frontend bundle after a rebuild or restart.
+        return FileResponse(str(index), headers={"Cache-Control": "no-store, max-age=0"})
     return {"message": "CareTrace backend running. Build the frontend with `npm run build` in web/."}

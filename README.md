@@ -12,14 +12,14 @@ It is designed for environments where privacy and clinical control matter: runti
 
 ## Built with GPT-5.6 and Codex
 
-GPT-5.6 in Codex was an engineering collaborator throughout the project. It accelerated:
+We used GPT-5.6 in Codex as a **specification-driven development (SDD)** collaborator: turning product ideas into explicit workflows, building them, and validating the result.
 
-- **Workflow design:** mapping the capture → evidence → review → approval loop and the boundaries between model output, deterministic checks, and clinician action.
-- **Agent implementation:** building the bounded local tool orchestration that turns speech, images, and text into source-linked, reviewable draft bundles.
-- **Safety engineering:** implementing approval gates, audit-linked corrections, deterministic Guardian rules, and tests for contradiction and medication-risk scenarios.
-- **Product delivery:** building and reviewing the FastAPI/React workflow, local runtime integration, and repeatable evaluation harness.
+- **From specs to product decisions:** Codex helped translate the bedside flow—capture → evidence → safety checks → clinician approval—into acceptance criteria and screen/API behavior. We chose a local-first design, source-linked facts, and clinician-controlled approvals as non-negotiable product boundaries.
+- **Engineering the workflow:** Codex accelerated the React and FastAPI implementation, local agent tool orchestration, SQLite-backed patient graph, OCR/transcription integration, and reviewable draft bundles.
+- **Safety and quality:** Codex helped implement deterministic Guardian rules, audit-linked corrections, and repeatable tests for medication risks, contradictions, routing, and billing-code validation. We deliberately kept safety decisions in deterministic code rather than the model.
+- **Design and iteration:** Codex supported UI refinement, debugging, and documentation—including the local architecture and judge walkthrough—so the technical design remained understandable and testable.
 
-GPT-5.6 and Codex were used during development, **not** in the runtime patient-care workflow. At runtime, MedSignal uses local `gpt-oss:20b`, deterministic code, and clinician review.
+The team made the final product, engineering, and design decisions. GPT-5.6 and Codex were used during development only—not in the runtime patient-care workflow. At runtime, MedSignal uses local `gpt-oss:20b`, deterministic code, and clinician review.
 
 ## Local clinical workflow agent
 

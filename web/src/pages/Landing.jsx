@@ -13,7 +13,7 @@ export default function Landing() {
       </div>
 
       <div className="hero">
-        <div className="hero-eyebrow fade-up">On-device · powered by Gemma · works with the network off</div>
+        <div className="hero-eyebrow fade-up">On-device · powered by gpt-oss · works with the network off</div>
         <h1 className="fade-up" style={{ animationDelay: "0.05s" }}>
           A second clinician in the room<br />that never forgets.
         </h1>

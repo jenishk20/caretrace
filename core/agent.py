@@ -51,8 +51,10 @@ def source_kind_for(input_kind: str, text: str) -> str:
 def prepare_input(input_kind: str, *, text: str | None = None,
                   audio_path: str | None = None, image_path: str | None = None) -> tuple[str, str]:
     if input_kind == "speech":
+        if (text or "").strip():
+            return text.strip(), "speech"
         if not audio_path:
-            raise ValueError("audio_path is required for speech input")
+            raise ValueError("text or audio_path is required for speech input")
         transcript, _language = voice.transcribe(audio_path)
         return transcript, "speech"
     if input_kind in ("image", "document"):
@@ -310,6 +312,17 @@ def run_agent(ctx: ToolContext, model_input_text: str, input_kind: str) -> dict:
                 result = _execute_tool(ctx, name, arguments)
                 ctx.trace.append({"tool": name, "args": arguments, "status": "ok",
                                   "fallback": True, "result_summary": _result_summary(result)})
+                if name == "extract_note_and_facts" and input_kind in ("image", "document"):
+                    for fact in ctx.last_facts:
+                        if fact.get("ntype") != "medication":
+                            continue
+                        reconcile_args = {"drug": fact.get("label", "")}
+                        reconciliation = _execute_tool(ctx, "reconcile_medication", reconcile_args)
+                        ctx.trace.append({
+                            "tool": "reconcile_medication", "args": reconcile_args,
+                            "status": "ok", "fallback": True,
+                            "result_summary": _result_summary(reconciliation),
+                        })
             except Exception as exc:
                 ctx.trace.append({"tool": name, "args": arguments, "status": "error",
                                   "fallback": True, "result_summary": {"error": str(exc)}})

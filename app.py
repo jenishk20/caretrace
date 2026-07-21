@@ -1,6 +1,6 @@
 """Confide — FastAPI app: auth, patients, graph, Guardian, and feature routers.
 
-Everything is local: SQLite for memory, Gemma via Ollama for language, faster-whisper
+Everything is local: SQLite for memory, gpt-oss via Ollama for language, faster-whisper
 + Piper for voice. Nothing leaves the device.
 """
 from __future__ import annotations
@@ -57,7 +57,7 @@ def status():
 
 @app.get("/api/gemma/logs")
 def gemma_logs(limit: int = 20):
-    """Recent on-device Gemma calls (prompt/output previews + latency) for the
+    """Recent on-device model calls (prompt/output previews + latency) for the
     live console. Proves inference is happening locally during the demo."""
     from core.llm import recent_calls
     return {"model": OLLAMA_MODEL, "calls": recent_calls(limit)}

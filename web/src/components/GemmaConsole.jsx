@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 
-// Live "what Gemma is doing" console. A floating dock (bottom-right) that shows
+// Live on-device model console. A floating dock (bottom-right) that shows
 // the most recent on-device model calls — prompt preview, JSON/text output, and
 // how many milliseconds each took. It only polls while open, so it never adds
 // background load during the demo.
@@ -30,9 +30,9 @@ export default function GemmaConsole() {
 
   return (
     <>
-      <button className="gc-fab" onClick={() => setOpen((v) => !v)} title="Live Gemma inference console">
+      <button className="gc-fab" onClick={() => setOpen((v) => !v)} title="Live on-device model console">
         <span className="gc-dot" />
-        ◈ Gemma {open ? "▾" : "▴"}
+        ◈ gpt-oss {open ? "▾" : "▴"}
         {!open && lastMs != null && <span className="gc-fab-ms">{lastMs}ms</span>}
       </button>
 
@@ -41,14 +41,14 @@ export default function GemmaConsole() {
           <div className="gc-head">
             <div>
               <b style={{ fontSize: 13 }}>On-device inference</b>
-              <div className="muted" style={{ fontSize: 11 }}>{model || "gemma"} · via Ollama · nothing leaves the device</div>
+              <div className="muted" style={{ fontSize: 11 }}>{model || "gpt-oss:20b"} · via Ollama · nothing leaves the device</div>
             </div>
             <button className="gc-x" onClick={() => setOpen(false)}>✕</button>
           </div>
           <div className="gc-body">
             {calls.length === 0 && (
               <div className="muted" style={{ fontSize: 12, padding: "10px 2px" }}>
-                No calls yet. Capture a round or ask the room — each Gemma call appears here with its latency.
+                No calls yet. Run an input or ask the room — each local model call appears here with its latency.
               </div>
             )}
             {calls.map((c) => (

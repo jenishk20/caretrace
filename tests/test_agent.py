@@ -16,6 +16,10 @@ def complete_turn():
     return {"role": "assistant", "content": "Complete.", "tool_calls": []}
 
 
+def test_prepare_input_accepts_browser_pretranscribed_speech():
+    assert agent.prepare_input("speech", text="spoken round") == ("spoken round", "speech")
+
+
 def test_input_kinds_drive_distinct_model_selected_tool_paths(patient, monkeypatch):
     routes = {
         "speech": [
@@ -88,6 +92,23 @@ def test_document_medication_triggers_cross_modal_guardian_alert(patient, monkey
     assert "bleeding" in bundle["alerts"][0]["message"].lower()
     reconciliation = next(event for event in bundle["trace"] if event["tool"] == "reconcile_medication")
     assert reconciliation["result_summary"]["safe"] is False
+
+
+def test_document_fallback_reconciles_each_extracted_medication(patient, monkeypatch):
+    monkeypatch.setattr(agent.llm, "ask_tools", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("offline model unavailable")))
+    monkeypatch.setattr(agent.graph, "structure_and_extract", lambda text: (
+        {"summary": "Ketorolac", "chief_complaint": None, "medications": ["Ketorolac"],
+         "follow_ups": [], "emotional_tone": None},
+        [{"ntype": "medication", "label": "Ketorolac", "category": "nsaid",
+          "polarity": "asserted", "confidence": 1.0, "detail": None}],
+    ))
+    ctx = agent.ToolContext(patient["id"], None, "prescription", "en")
+
+    bundle = agent.run_agent(ctx, "Ketorolac", "document")
+
+    assert [event["tool"] for event in bundle["trace"]] == [
+        "extract_note_and_facts", "reconcile_medication", "ingest_facts", "run_guardian"
+    ]
 
 
 def test_billing_tool_drops_hallucinated_code_and_uses_curated_labels(patient, monkeypatch):

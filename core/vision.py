@@ -6,13 +6,31 @@ import subprocess
 import tempfile
 from io import BytesIO
 from pathlib import Path
+import uuid
 
 from PIL import Image, ImageFilter, ImageOps, UnidentifiedImageError
+
+from core.config import IMAGES_DIR
 
 
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
 SUPPORTED_FORMATS = {"JPEG", "PNG", "WEBP"}
 MAX_DESKEW_DEGREES = 5
+def ocr(image_path: str) -> str:
+    result = subprocess.run(
+        ["tesseract", image_path, "stdout"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return result.stdout.strip()
+
+
+def save_image(data: bytes, suffix: str = ".png") -> str:
+    name = f"{uuid.uuid4().hex}{suffix}"
+    path = IMAGES_DIR / name
+    path.write_bytes(data)
+    return str(path)
 
 
 def _validated_image(data: bytes) -> Image.Image:

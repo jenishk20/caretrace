@@ -1,0 +1,15 @@
+# SBAR handoff: all 5 fields required; priority should lead with the urgent item.
+- id: bleeding_risk_handoff
+  seed_nodes:
+    - {ntype: condition, label: Atrial fibrillation, category: null}
+    - {ntype: medication, label: Warfarin, category: anticoagulant}
+    - {ntype: medication, label: Ibuprofen, category: nsaid}
+    - {ntype: symptom, label: Chest pain, category: null}
+  reason_for_visit: chest pain
+
+- id: post_op_handoff
+  seed_nodes:
+    - {ntype: procedure, label: Appendectomy, category: null}
+    - {ntype: medication, label: Morphine, category: opioid}
+    - {ntype: lab_order, label: Recheck vitals, category: null}
+  reason_for_visit: post-operative recovery

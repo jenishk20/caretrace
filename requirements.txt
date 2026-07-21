@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+python-multipart
+faster-whisper
+piper-tts
+pillow
+ollama
+requests
+eval-type-backport

@@ -1,0 +1,35 @@
+# Discharge grounded-Q&A cases. red_flags seed the doc; grounding is code-checked.
+- id: shower_grounded
+  ocr_text: "Discharge summary: laparoscopic appendectomy. You may shower after 48 hours. Keep the incisions clean and dry until then. Red flags: fever over 101F, worsening abdominal pain, or drainage from the wound - go to the emergency room."
+  red_flags:
+    - {symptom: fever over 101F, description: go to the ER}
+    - {symptom: worsening abdominal pain, description: go to the ER}
+    - {symptom: wound drainage, description: go to the ER}
+  question: "When can I shower?"
+  expect_grounded: true
+  expect_red_flag: false
+
+- id: fever_is_redflag
+  ocr_text: "Discharge summary: laparoscopic appendectomy. Red flags: fever over 101F, worsening abdominal pain, or drainage from the wound - go to the emergency room."
+  red_flags:
+    - {symptom: fever over 101F, description: go to the ER}
+    - {symptom: worsening abdominal pain, description: go to the ER}
+  question: "I have a fever of 102 and my belly hurts more than yesterday"
+  expect_grounded: true
+  expect_red_flag: true
+
+- id: wound_care_grounded
+  ocr_text: "Discharge: knee arthroscopy. Keep the dressing on for 3 days. You may remove it on day 4 and shower. Ice the knee 20 minutes at a time. Red flags: calf swelling, chest pain, shortness of breath."
+  red_flags:
+    - {symptom: calf swelling, description: possible clot - urgent}
+    - {symptom: chest pain, description: call 911}
+    - {symptom: shortness of breath, description: call 911}
+  question: "How long do I keep the dressing on?"
+  expect_grounded: true
+  expect_red_flag: false
+
+- id: out_of_doc_refusal
+  ocr_text: "Discharge: laparoscopic appendectomy. Keep incisions dry for 48 hours. Follow up with surgery in 2 weeks."
+  red_flags: []
+  question: "Can I drink alcohol with my pain medication?"
+  expect_grounded: false

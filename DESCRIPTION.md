@@ -1,32 +1,12 @@
-# Confide — an on-premise clinical AI
+# Confide — a second clinician in the room that never forgets
 
-**Every conversation stays in the room.** A second clinician that never forgets — on-device, on Gemma 4, works with the network off.
-
-![Gemma 4](https://img.shields.io/badge/Gemma%204-on--device-blue)
-![On-Prem](https://img.shields.io/badge/inference-100%25%20local-success)
-![Offline](https://img.shields.io/badge/network-not%20required-important)
-![Stack](https://img.shields.io/badge/FastAPI%20%2B%20React-Ollama-009688)
-
-*Build with Gemma: JustBuild — Edge / On-Device Track*
-
----
+*On-device, on Gemma 4, works with the network off.*
 
 ## Problem
 
-The first ten minutes of any hospital visit are the most confusing, and for a scared, non-English-speaking patient they're frightening. Meanwhile clinicians make mistakes when they're tired and busy — a drug given against a known allergy, a contradiction nobody catches, a lab ordered and forgotten. Both failures share one root cause: **nobody can hold the whole patient in their head.** And in healthcare, the data is the most sensitive there is, so any solution that ships that data to a cloud API defeats its own purpose.
+The first ten minutes of any hospital visit are the most confusing, and for a scared, non-English-speaking patient they're frightening. Meanwhile clinicians make mistakes when they're tired and busy — a drug given against a known allergy, a contradiction nobody catches, a lab ordered and forgotten. Both failures share one root cause: nobody can hold the whole patient in their head. And in healthcare, the data is the most sensitive there is, so any solution that ships that data to a cloud API defeats its own purpose.
 
 Confide is a single always-on presence, tied to a patient for their stay, that **Hears** every conversation, **Remembers** everything in one living patient model, and **Watches over** the care, catching the mistakes people make. Everything runs on-device on Gemma 4, works with the network off, and never leaves the machine.
-
-```mermaid
-flowchart LR
-    A["🎧 HEAR<br/>speech + documents"] --> B["🧠 REMEMBER<br/>living patient graph"]
-    B --> C["🛡️ WATCH OVER<br/>The Guardian"]
-    C --> D["⚠️ Calm alert<br/>shown to clinician"]
-    style A fill:#1e3a5f,color:#fff
-    style B fill:#4a2c5e,color:#fff
-    style C fill:#5e2c2c,color:#fff
-    style D fill:#2c5e3a,color:#fff
-```
 
 ---
 
@@ -80,13 +60,93 @@ flowchart LR
 
 ---
 
-## How we use Gemma 4
+## 1 · Value
 
-One Gemma 4 model, served locally by **Ollama**, carries the entire product — reasoning **and** vision. Nothing leaves the machine.
+**User + problem**
+Clinicians (cognitive overload, safety slips) and patients like María — 68, limited English — who can't understand consent forms, medications, or discharge instructions.
 
-> ### Gemma 4 is the *language* layer. It is never the *decision* layer.
+**Live outcomes**
+- Dictate a round → structured note + graph + Guardian check, in one pass.
+- Prescribe amoxicillin for a penicillin-allergic patient → **unprompted critical allergy alert**.
+- Patient scans a new pill → *"conflicts with your warfarin."*
+- Patient asks a question in Spanish → grounded answer, spoken back.
 
-Gemma extracts structured facts from messy speech and phrases sentences clearly. Every clinical judgment — does this drug conflict with that allergy, do two drugs interact, is this recheck overdue — is a deterministic lookup in curated, auditable code (`core/curated.py`), never something the model reasons about from memory.
+**Better than today**
+Replaces a 10-minute interpreter wait, an unread consent form, and a clinician's memory as the *only* safety net — and adds proactive catches the status quo simply can't make.
+
+## 2 · Inputs & Data
+
+**Inputs**
+Speech (Whisper), typed text, photos of forms/pill bottles (Gemma vision). Answers are grounded **only** in the patient's own recorded facts.
+
+**Provenance**
+`input → Gemma extracts structured facts → facts persist as graph nodes tagged by source → Guardian reasons → UI renders`
+
+**Privacy (audited)**
+All inference and all storage are local — Gemma via local Ollama, Whisper, Piper, SQLite. No cloud, no external DB, no API keys. Patient data is git-ignored and never transmitted. **Air-gappable.**
+
+**Failure handling**
+Grammar-constrained JSON with retries, a deterministic lexicon fallback, TTS falls back to browser speech, and the med-checker refuses gracefully rather than guessing.
+
+## 3 · Enablement & Ease of Use
+
+**Workflow**
+Clinician steps through *Prepare → Consent → Meeting → Prescription → Handoff → Discharge*; the patient side has 3 tabs and a flag-icon language switch that re-renders everything.
+
+**Responsive**
+Structure renders instantly (no LLM in the critical path), AI content prefetches in parallel and streams token-by-token, and orientation is a checklist — not a wall of text.
+
+**Recovery + safeguards**
+Every spoken action has a typed fallback. Alerts are ack/dismiss. The med scanner is **check-only** and tells the patient to confirm with staff. Discharge Q&A **honestly refuses** out-of-document questions instead of guessing.
+
+## 4 · Underlying Model
+
+**Choice**
+Gemma 4, local via Ollama — multilingual language *and* vision, under a hard privacy constraint. Used for structured extraction, vision OCR, grounded Q&A, translation, streaming, and phrasing.
+
+**Central, not decorative**
+Remove Gemma and there's no product — it builds the structured memory everything else runs on.
+
+**Coherent architecture**
+Gemma extracts and phrases; every clinical judgment (allergy, interaction, contradiction, recheck timing) is deterministic, curated code — so the system *verifies* rather than hallucinates.
+
+**On-device verification**
+Core inference is local Gemma 4 (`localhost:11434`), proven by a network-off toggle and a live inference console — benchmarked across size × precision (12B and 8B, at 16/8/4-bit) with real token and latency numbers.
+
+## 5 · Evidence & Evaluation
+
+**Success criteria**
+Per-feature targets vs. measured — all met.
+
+**Repeatable metrics**
+Three-tier eval:
+- Deterministic Guardian goldens — **9/9, precision 1.0, recall 1.0, 0 false negatives** (with negative cases proving no over-firing)
+- Golden extraction / red-flag checks
+- LLM-judge groundedness
+
+**27 golden cases + 14 unit tests, all green** — with results rendered on a live, offline evaluation dashboard.
+
+**Gemma evaluation, measured on-device**
+- **Token usage** — 1,050 input / 1,350 output tokens (2,400 total) across the eval run, at **16.6 tokens/sec** on-device.
+- **Precision benchmark** — Gemma 4 measured across quantization levels, real latency and throughput, no cloud involved:
+
+  | Precision | Quant | Latency (p50) | Tokens/sec | Output tokens |
+  |---|---|---|---|---|
+  | 16-bit | BF16 | 25,366ms | 18.4 | 1,920 |
+  | 8-bit | Q8_0 | 17,791ms | 28.0 | 1,609 |
+  | 4-bit | BF16 | 7,760ms | 16.6 | 1,350 |
+
+  Lower precision trades some output length for roughly **3× lower latency** — a real deployment can pick the point on that curve that fits the hospital's hardware.
+
+**Honest limits**
+Assistive prototype, not a medical device. Curated drug subset, not a full formulary. CPU latency. LLM-judge grades Gemma (self-bias — hardening planned).
+
+**Verifies itself**
+The Guardian fires unprompted and logs auditable alerts; the self-check surfaces un-done orders; the evaluation suite caught a real product safety bug (discharge deflecting instead of refusing), which was fixed.
+
+---
+
+## Architecture
 
 ```
   Voice · Vision · Text
@@ -106,114 +166,7 @@ Gemma extracts structured facts from messy speech and phrases sentences clearly.
   ── all on-device · works with the network off ──
 ```
 
-Remove Gemma and there's no product — it builds the structured memory everything else runs on. Core inference is local Gemma 4 (`localhost:11434`), proven by a live `NETWORK: OFF` toggle and a floating **Gemma console** (prompt → JSON → latency, in real time). Pull the Wi-Fi; it keeps working.
-
----
-
-## Value
-
-**User + problem**
-Clinicians (cognitive overload, safety slips) and patients like María — 68, limited English — who can't understand consent forms, medications, or discharge instructions.
-
-**Live outcomes**
-- Dictate a round → structured note + graph + Guardian check, in one pass.
-- Prescribe amoxicillin for a penicillin-allergic patient → **unprompted critical allergy alert**.
-- Patient scans a new pill → *"conflicts with your warfarin."*
-- Patient asks a question in Spanish → grounded answer, spoken back.
-
-**Better than today**
-Replaces a 10-minute interpreter wait, an unread consent form, and a clinician's memory as the *only* safety net — and adds proactive catches the status quo simply can't make.
-
-## Inputs & Data
-
-**Inputs**
-Speech (Whisper), typed text, photos of forms/pill bottles (Gemma vision). Answers are grounded **only** in the patient's own recorded facts.
-
-**Provenance**
-`input → Gemma extracts structured facts → facts persist as graph nodes tagged by source → Guardian reasons → UI renders`
-
-**Privacy (audited)**
-All inference and all storage are local — Gemma via local Ollama, Whisper, Piper, SQLite. No cloud, no external DB, no API keys. Patient data is git-ignored and never transmitted. **Air-gappable.**
-
-**Failure handling**
-Grammar-constrained JSON with retries, a deterministic lexicon fallback, TTS falls back to browser speech, and the med-checker refuses gracefully rather than guessing.
-
-## Enablement & Ease of Use
-
-**Workflow**
-Clinician steps through *Prepare → Consent → Meeting → Prescription → Handoff → Discharge*; the patient side has 3 tabs and a flag-icon language switch that re-renders everything.
-
-**Responsive**
-Structure renders instantly (no LLM in the critical path), AI content prefetches in parallel and streams token-by-token, and orientation is a checklist — not a wall of text.
-
-**Recovery + safeguards**
-Every spoken action has a typed fallback. Alerts are ack/dismiss. The med scanner is **check-only** and tells the patient to confirm with staff. Discharge Q&A **honestly refuses** out-of-document questions instead of guessing.
-
----
-
-## Evidence & Evaluation
-
-**Success criteria:** per-feature targets vs. measured — all met.
-
-**Repeatable metrics** — a three-tier eval:
-- Deterministic Guardian goldens — **9/9, precision 1.0, recall 1.0, 0 false negatives** (with negative cases proving no over-firing)
-- Golden extraction / red-flag checks
-- LLM-judge groundedness
-
-**27 golden cases + 14 unit tests, all green** — with results rendered on a live, offline evaluation dashboard.
-
-### Gemma token efficiency
-
-Measured on-device, no cloud involved:
-
-- **Token usage** — 1,050 input / 1,350 output tokens (2,400 total) across the eval run, at **16.6 tokens/sec** on-device.
-- **Precision benchmark** — Gemma 4 across quantization levels, real latency and throughput:
-
-  | Precision | Quant | Latency (p50) | Tokens/sec | Output tokens |
-  |---|---|---|---|---|
-  | 16-bit | BF16 | 25,366ms | 18.4 | 1,920 |
-  | 8-bit | Q8_0 | 17,791ms | 28.0 | 1,609 |
-  | 4-bit | BF16 | 7,760ms | 16.6 | 1,350 |
-
-  Lower precision trades some output length for roughly **3× lower latency** — a real deployment can pick the point on that curve that fits the hospital's hardware.
-
-**Honest limits:** assistive prototype, not a medical device. Curated drug subset, not a full formulary. CPU latency. LLM-judge grades Gemma (self-bias — hardening planned).
-
-**Verifies itself:** the Guardian fires unprompted and logs auditable alerts; the self-check surfaces un-done orders; the evaluation suite caught a real product safety bug (discharge deflecting instead of refusing), which was fixed.
-
-Run it yourself:
-
-```bash
-python -m eval.run_eval                     # everything (uses model if available)
-python -m eval.run_eval --only guardian     # one or more features (comma-separated)
-python -m eval.run_eval --no-model          # deterministic tiers only
-open eval/dashboard/index.html              # view results, offline
-```
-
----
-
-## Quick start
-
-```bash
-git clone git@github.com:Arnav710/build-with-gemma.git && cd build-with-gemma
-ollama pull gemma4                                   # local model
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cd web && npm install && npm run build && cd ..      # build the SPA
-uvicorn app:app --reload                             # open http://localhost:8000
-```
-
-Then turn off Wi-Fi and use it — dictation, OCR, Q&A, translation, and Guardian alerts all keep working. Seeded logins: `doctor/confide`, `maria/confide`.
-
-## Tech stack
-
-**Gemma 4 via Ollama** (reasoning + vision) · **faster-whisper** (STT) · **Piper** (TTS) · **SQLite** (living graph) · curated clinical tables in code (swap 1:1 for RxNorm/DrugBank) · **FastAPI** + **React/Vite**, all on `localhost`.
-
-## Contributors
-
-Jenish Kothari · Akshay Kumar · Khushi Sidana · Arnav Modi
-
-*Built for the Build with Gemma: JustBuild hackathon (Edge / On-Device track).*
+**Stack:** Gemma 4 (Ollama, multimodal, JSON mode) · faster-whisper STT · Piper TTS · SQLite · curated clinical tables (→ RxNorm/DrugBank in production) · FastAPI + React.
 
 ---
 

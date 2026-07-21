@@ -1,0 +1,12 @@
+# Consent explainer Q&A. Grounding is code-checked; prose is judge-scored.
+- id: appendectomy_risks
+  ocr_text: "CONSENT FOR SURGERY. Procedure: laparoscopic appendectomy. This removes the appendix through small incisions. Risks include bleeding, infection, injury to nearby organs, and risks of general anesthesia. Alternatives: antibiotics alone, which carry a risk of recurrence."
+  question: "What are the risks of this surgery?"
+
+- id: anesthesia_question
+  ocr_text: "CONSENT FOR SURGERY. Procedure: laparoscopic appendectomy. Risks include bleeding, infection, and risks of general anesthesia including reaction to medications."
+  question: "Will I be asleep during the procedure?"
+
+- id: alternatives_question
+  ocr_text: "CONSENT FOR SURGERY. Procedure: laparoscopic appendectomy. Alternatives: antibiotics alone, which carry a risk of recurrence and possible need for later surgery."
+  question: "Is there any other option besides surgery?"

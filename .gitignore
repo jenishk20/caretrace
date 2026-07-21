@@ -1,12 +1,16 @@
-.DS_Store
-.env
 .venv/
 __pycache__/
-*.py[cod]
-node_modules/
-dist/
-build/
-coverage/
-data/
+*.pyc
 *.sqlite
-*.db
+data/*.db
+data/media/audio/*
+data/media/images/*
+!data/media/audio/.gitkeep
+!data/media/images/.gitkeep
+models/*.onnx
+models/*.onnx.json
+.DS_Store
+
+# eval: keep latest.json/latest.js for the dashboard; drop timestamped archives
+eval/results/run-*.json
+.pytest_cache/

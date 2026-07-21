@@ -1,0 +1,71 @@
+# Guardian deterministic cases. Every expectation traces to core/curated.py.
+# check: which real Guardian function to run on the LAST seeded node.
+- id: allergy_penicillin_amoxicillin
+  desc: Penicillin allergy + amoxicillin (same class) -> critical allergy alert
+  seed_nodes:
+    - {ntype: allergy, label: Penicillin, category: penicillin_class}
+    - {ntype: medication, label: Amoxicillin, category: penicillin_class}
+  check: medication
+  expect: [{atype: allergy, severity: critical}]
+
+- id: crossreact_penicillin_cephalexin
+  desc: Penicillin allergy + cephalosporin (cross-reactivity in curated table)
+  seed_nodes:
+    - {ntype: allergy, label: Penicillin, category: penicillin_class}
+    - {ntype: medication, label: Cephalexin, category: cephalosporin}
+  check: medication
+  expect: [{atype: allergy, severity: critical}]
+
+- id: interaction_warfarin_ibuprofen
+  desc: anticoagulant + nsaid -> critical bleeding interaction
+  seed_nodes:
+    - {ntype: medication, label: Warfarin, category: anticoagulant}
+    - {ntype: medication, label: Ibuprofen, category: nsaid}
+  check: medication
+  expect: [{atype: interaction, severity: critical}]
+
+- id: interaction_opioid_benzo
+  desc: opioid + benzodiazepine -> critical respiratory depression
+  seed_nodes:
+    - {ntype: medication, label: Morphine, category: opioid}
+    - {ntype: medication, label: Lorazepam, category: benzodiazepine}
+  check: medication
+  expect: [{atype: interaction, severity: critical}]
+
+- id: interaction_ace_nsaid
+  desc: ace_inhibitor + nsaid -> warning (kidney)
+  seed_nodes:
+    - {ntype: medication, label: Lisinopril, category: ace_inhibitor}
+    - {ntype: medication, label: Naproxen, category: nsaid}
+  check: medication
+  expect: [{atype: interaction, severity: warning}]
+
+- id: no_conflict_statin_alone
+  desc: negative case - a statin alone must NOT raise any alert
+  seed_nodes:
+    - {ntype: medication, label: Atorvastatin, category: statin}
+  check: medication
+  expect: []
+
+- id: no_conflict_unrelated_pair
+  desc: negative case - beta blocker + statin have no curated interaction
+  seed_nodes:
+    - {ntype: medication, label: Metoprolol, category: beta_blocker}
+    - {ntype: medication, label: Atorvastatin, category: statin}
+  check: medication
+  expect: []
+
+- id: contradiction_denies_warfarin
+  desc: record asserts warfarin, patient denies blood thinners -> contradiction
+  seed_nodes:
+    - {ntype: medication, label: Warfarin, category: anticoagulant, polarity: asserted}
+    - {ntype: statement, label: Denies blood thinners, category: anticoagulant, polarity: denied}
+  check: contradiction
+  expect: [{atype: contradiction, severity: warning}]
+
+- id: no_contradiction_when_consistent
+  desc: negative - denying something not on file is not a contradiction
+  seed_nodes:
+    - {ntype: statement, label: Denies opioids, category: opioid, polarity: denied}
+  check: contradiction
+  expect: []

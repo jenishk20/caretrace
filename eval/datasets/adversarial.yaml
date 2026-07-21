@@ -1,0 +1,12 @@
+# Edge cases that drive the bug hunt (SPEC section 6).
+- id: same_batch_interaction
+  desc: "BUG CANDIDATE 1 - two conflicting drugs in ONE dictation must still cross-check"
+  feature: scribe
+  transcript: "Start warfarin and ibuprofen together for this patient now."
+  expect_alert_atype: interaction
+
+- id: same_batch_allergy
+  desc: "allergy stated and conflicting drug ordered in the same dictation"
+  feature: scribe
+  transcript: "Patient is allergic to penicillin. Go ahead and start amoxicillin now."
+  expect_alert_atype: allergy

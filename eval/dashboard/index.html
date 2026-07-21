@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doctor Offline — Evaluation Dashboard</title>
+<style>
+  /* ---- palette (validated dataviz status + chrome; light + dark) ---- */
+  :root {
+    color-scheme: dark;
+    --plane:#0d0d0d; --surface:#1a1a19; --surface-2:#222220;
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+    --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+    --blue:#3987e5; --seq-1:#184f95; --seq-2:#3987e5; --seq-3:#86b6ef;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --plane:#f9f9f7; --surface:#fcfcfb; --surface-2:#f2f1ec;
+    --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
+    --good:#006300; --warning:#b06f00; --serious:#c25a2f; --critical:#c0332f;
+    --blue:#2a78d6; --seq-1:#cde2fb; --seq-2:#6da7ec; --seq-3:#184f95;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--plane); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.5;
+  }
+  .wrap { max-width:1100px; margin:0 auto; padding:28px 22px 80px; }
+  header.top { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  h1 { font-size:22px; margin:0 0 4px; letter-spacing:-.01em; }
+  .sub { color:var(--ink-2); font-size:13px; margin:0; }
+  .pills { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .pill { font-size:12px; padding:5px 11px; border-radius:999px; border:1px solid var(--border);
+          background:var(--surface); color:var(--ink-2); display:inline-flex; gap:6px; align-items:center; }
+  .pill.off b { color:var(--good); }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+  button.toggle { font:inherit; font-size:12px; cursor:pointer; padding:5px 11px; border-radius:999px;
+          border:1px solid var(--border); background:var(--surface); color:var(--ink-2); }
+
+  .hero { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:22px 0 8px; }
+  .stat { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
+  .stat .k { font-size:12px; color:var(--muted); margin:0 0 6px; text-transform:uppercase; letter-spacing:.04em; }
+  .stat .v { font-size:30px; font-weight:650; margin:0; letter-spacing:-.02em; }
+  .stat .v small { font-size:15px; color:var(--muted); font-weight:500; }
+
+  section { margin-top:30px; }
+  h2 { font-size:15px; margin:0 0 12px; color:var(--ink); letter-spacing:-.01em; }
+
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:15px 16px; }
+  .card .name { font-weight:600; font-size:14px; display:flex; align-items:center; gap:8px; }
+  .card .metric { font-size:13px; color:var(--ink-2); margin-top:8px; display:flex; justify-content:space-between; }
+  .card .metric b { font-variant-numeric:tabular-nums; }
+  .bar { height:7px; border-radius:99px; background:var(--surface-2); margin-top:10px; overflow:hidden; }
+  .bar > i { display:block; height:100%; border-radius:99px; }
+  .tag { font-size:11px; padding:2px 8px; border-radius:6px; font-weight:600; }
+  .tag.good { background:color-mix(in srgb,var(--good) 20%,transparent); color:var(--good); }
+  .tag.warning { background:color-mix(in srgb,var(--warning) 24%,transparent); color:var(--warning); }
+  .tag.critical { background:color-mix(in srgb,var(--critical) 22%,transparent); color:var(--critical); }
+  .tag.muted { background:var(--surface-2); color:var(--muted); }
+
+  .split { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:760px){ .split{ grid-template-columns:1fr; } }
+  .panel { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
+
+  /* confusion matrix */
+  .cm { display:grid; grid-template-columns:auto 1fr 1fr; gap:6px; margin-top:6px; }
+  .cm .cell { border-radius:10px; padding:12px; text-align:center; border:1px solid var(--border); }
+  .cm .lab { display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+  .cm .cell .n { font-size:24px; font-weight:650; font-variant-numeric:tabular-nums; }
+  .cm .cell .t { font-size:11px; color:var(--ink-2); margin-top:2px; }
+  .cm .tp { background:color-mix(in srgb,var(--good) 16%,transparent); }
+  .cm .tn { background:var(--surface-2); }
+  .cm .fp { background:color-mix(in srgb,var(--warning) 18%,transparent); }
+  .cm .fn { background:color-mix(in srgb,var(--critical) 20%,transparent); outline:2px solid var(--critical); }
+
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--grid); }
+  th { color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+  td.mono { font-variant-numeric:tabular-nums; color:var(--ink-2); }
+  tr:hover td { background:var(--surface-2); }
+  .filters { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+  .filters button { font:inherit; font-size:12px; cursor:pointer; padding:5px 12px; border-radius:8px;
+        border:1px solid var(--border); background:var(--surface); color:var(--ink-2); }
+  .filters button[aria-pressed="true"]{ background:var(--blue); color:#fff; border-color:transparent; }
+
+  .bug { border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:10px; background:var(--surface); }
+  .bug h3 { margin:0 0 8px; font-size:14px; display:flex; gap:8px; align-items:center; }
+  .bug dl { margin:0; display:grid; grid-template-columns:92px 1fr; gap:4px 12px; font-size:13px; }
+  .bug dt { color:var(--muted); }
+  .bug dd { margin:0; color:var(--ink-2); }
+
+  .empty { color:var(--muted); font-size:13px; padding:14px; text-align:center; border:1px dashed var(--border); border-radius:12px; }
+  .drop { margin-top:14px; padding:22px; border:1px dashed var(--border); border-radius:12px; text-align:center; color:var(--muted); font-size:13px; }
+  svg text { fill:var(--ink-2); font-size:11px; }
+  .legend { display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--ink-2); margin-top:8px; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .foot { margin-top:30px; color:var(--muted); font-size:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Doctor Offline — Evaluation Dashboard</h1>
+      <p class="sub">On-device Gemma pipeline · three-tier evaluation (deterministic · golden · LLM-judge)</p>
+    </div>
+    <div class="pills">
+      <span class="pill off"><span class="dot" style="background:var(--good)"></span>NETWORK <b>OFF-capable</b></span>
+      <span class="pill" id="model-pill">model —</span>
+      <span class="pill" id="time-pill">—</span>
+      <button class="toggle" id="themeBtn">◑ theme</button>
+    </div>
+  </header>
+
+  <div class="hero" id="hero"></div>
+
+  <section>
+    <h2>Per-feature scorecards <span style="color:var(--muted);font-weight:400">(metric vs. target)</span></h2>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section class="split">
+    <div class="panel">
+      <h2>Guardian confusion matrix <span style="color:var(--muted);font-weight:400">(deterministic, no model)</span></h2>
+      <div id="cm"></div>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--good)"></span>correct fire / no-fire</span>
+        <span><span class="dot" style="background:var(--warning)"></span>false positive</span>
+        <span><span class="dot" style="background:var(--critical)"></span>false negative (dangerous miss)</span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Latency by feature <span style="color:var(--muted);font-weight:400">(on-device, ms)</span></h2>
+      <div id="latency"></div>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--seq-3)"></span>p50</span>
+        <span><span class="dot" style="background:var(--blue)"></span>p95</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Bugs found <span style="color:var(--muted);font-weight:400">(symptom → root cause → fix)</span></h2>
+    <div id="bugs"></div>
+  </section>
+
+  <section>
+    <h2>Per-case results</h2>
+    <div class="filters" id="filters"></div>
+    <div class="panel" style="padding:4px 6px"><table id="caseTable"></table></div>
+  </section>
+
+  <p class="foot" id="foot"></p>
+  <div class="drop" id="drop" hidden>
+    No results loaded. Run <code>python -m eval.run_eval</code>, then drop
+    <code>results/latest.json</code> here (or serve the folder and reload).
+    <br><input type="file" id="file" accept=".json" style="margin-top:10px">
+  </div>
+</div>
+
+<!-- Loads over file:// without CORS. Falls back to fetch / drag-drop. -->
+<script src="../results/latest.js" onerror="window.__noshim=true"></script>
+<script>
+const $ = s => document.querySelector(s);
+const el = (t,c,h)=>{const e=document.createElement(t); if(c)e.className=c; if(h!=null)e.innerHTML=h; return e;};
+const pct = x => (x==null?"—":Math.round(x*100)+"%");
+
+// Targets from the spec (§2). Used to color scorecards.
+const TARGETS = {
+  guardian:{key:"recall",label:"recall",target:1.0,fmt:pct},
+  scribe:{key:"passRate",label:"extraction pass",target:0.85,fmt:pct},
+  discharge:{key:"passRate",label:"grounding+redflag",target:0.90,fmt:pct},
+  consent:{key:"passRate",label:"grounded",target:0.90,fmt:pct},
+  handoff:{key:"passRate",label:"SBAR complete",target:1.0,fmt:pct},
+  orientation:{key:"passRate",label:"generated+safe",target:0.90,fmt:pct},
+  adversarial:{key:"passRate",label:"edge cases",target:1.0,fmt:pct},
+};
+const FEAT_ORDER = ["guardian","scribe","discharge","consent","handoff","orientation","adversarial"];
+
+function statusClass(v,t){ if(v>=t) return "good"; if(v>=t-0.15) return "warning"; return "critical"; }
+function statusColor(v,t){ return v>=t?"var(--good)":(v>=t-0.15?"var(--warning)":"var(--critical)"); }
+
+function render(data){
+  $("#drop").hidden = true;
+  $("#model-pill").textContent = "model: " + (data.model||"?") + (data.model_available?" · live":" · offline");
+  $("#time-pill").textContent = (data.generated_at||"").replace("T"," ").replace("+00:00"," UTC");
+
+  const S = data.summary||{};
+  // hero
+  let totPass=0, tot=0;
+  Object.values(S).forEach(b=>{ if(!b.skipped){ totPass+=b.passed; tot+=b.total; }});
+  const gm = S.guardian||{};
+  const allLat = Object.values(data.latency||{}).map(l=>l.p50).filter(x=>x);
+  const hero = [
+    {k:"Overall pass rate", v:tot?Math.round(totPass/tot*100)+"<small>%</small>":"—", s:tot?statusColor(totPass/tot,0.9):null},
+    {k:"Cases run", v:tot+"<small> cases</small>"},
+    {k:"Guardian recall", v:gm.recall!=null?Math.round(gm.recall*100)+"<small>%</small>":"—", s:gm.recall!=null?statusColor(gm.recall,1):null},
+    {k:"Dangerous misses", v:(gm.confusion?gm.confusion.fn:"—")+"<small> FN</small>", s:gm.confusion?(gm.confusion.fn===0?"var(--good)":"var(--critical)"):null},
+  ];
+  $("#hero").innerHTML="";
+  hero.forEach(h=>{const c=el("div","stat"); c.innerHTML=`<p class="k">${h.k}</p><p class="v" ${h.s?`style="color:${h.s}"`:""}>${h.v}</p>`; $("#hero").appendChild(c);});
+
+  // scorecards
+  const cards=$("#cards"); cards.innerHTML="";
+  FEAT_ORDER.forEach(f=>{
+    const b=S[f]; if(!b) return;
+    const cfg=TARGETS[f];
+    const passRate = b.total?b.passed/b.total:0;
+    const val = cfg.key==="recall" ? (b.recall??passRate) : passRate;
+    const card=el("div","card");
+    if(b.skipped){
+      card.innerHTML=`<div class="name">${f} <span class="tag muted">skipped</span></div>
+        <div class="metric"><span>${b.reason||"not run"}</span></div>`;
+    } else {
+      const sc=statusClass(val,cfg.target);
+      card.innerHTML=`
+        <div class="name">${f} <span class="tag ${sc}">${b.passed}/${b.total}</span></div>
+        <div class="metric"><span>${cfg.label}</span><b>${cfg.fmt(val)} <span style="color:var(--muted)">/ ${cfg.fmt(cfg.target)}</span></b></div>
+        <div class="bar"><i style="width:${Math.round(val*100)}%;background:${statusColor(val,cfg.target)}"></i></div>`;
+    }
+    cards.appendChild(card);
+  });
+
+  // confusion matrix
+  const cm=gm.confusion||{tp:0,fp:0,fn:0}; const tn=(gm.total||0)-cm.tp-cm.fp-cm.fn;
+  $("#cm").innerHTML=`
+    <div class="cm">
+      <div></div><div class="lab">alert should fire</div><div class="lab">should not fire</div>
+      <div class="lab" style="writing-mode:vertical-rl;transform:rotate(180deg)">fired</div>
+      <div class="cell tp"><div class="n">${cm.tp}</div><div class="t">true positive</div></div>
+      <div class="cell fp"><div class="n">${cm.fp}</div><div class="t">false positive</div></div>
+      <div class="lab" style="writing-mode:vertical-rl;transform:rotate(180deg)">didn't fire</div>
+      <div class="cell fn"><div class="n">${cm.fn}</div><div class="t">false negative</div></div>
+      <div class="cell tn"><div class="n">${tn<0?0:tn}</div><div class="t">true negative</div></div>
+    </div>`;
+
+  // latency chart (grouped p50/p95 horizontal bars)
+  drawLatency(data.latency||{});
+
+  // bugs
+  const bugsWrap=$("#bugs"); bugsWrap.innerHTML="";
+  const bugs=data.bugs||[];
+  if(!bugs.length){ bugsWrap.appendChild(el("div","empty","No open bugs recorded — see BUGS.md for investigations (including refuted candidates).")); }
+  bugs.forEach(bg=>{
+    const sc = bg.status==="fixed"?"good":(bg.status==="refuted"?"muted":"critical");
+    const d=el("div","bug");
+    d.innerHTML=`<h3><span class="tag ${sc}">${bg.status||"open"}</span> ${bg.title||bg.id}</h3>
+      <dl>
+        <dt>Symptom</dt><dd>${bg.symptom||"—"}</dd>
+        <dt>Root cause</dt><dd>${bg.root_cause||"—"}</dd>
+        <dt>Fix</dt><dd>${bg.fix||"—"}</dd>
+      </dl>`;
+    bugsWrap.appendChild(d);
+  });
+
+  // per-case table + filters
+  buildTable(data.cases||[]);
+}
+
+function drawLatency(lat){
+  const feats=Object.keys(lat).filter(f=>lat[f].n);
+  if(!feats.length){ $("#latency").innerHTML='<div class="empty">No model-timed cases in this run.</div>'; return; }
+  const max=Math.max(...feats.map(f=>lat[f].p95||lat[f].p50||1),1);
+  const rowH=34, w=520, padL=92, padR=54, barMax=w-padL-padR;
+  const h=feats.length*rowH+14;
+  let svg=`<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="latency by feature">`;
+  feats.forEach((f,i)=>{
+    const y=i*rowH+8;
+    const p50=lat[f].p50||0, p95=lat[f].p95||0;
+    const w50=Math.max(2,barMax*p50/max), w95=Math.max(2,barMax*p95/max);
+    svg+=`<text x="${padL-8}" y="${y+rowH/2}" text-anchor="end" dominant-baseline="middle">${f}</text>`;
+    svg+=`<rect x="${padL}" y="${y+5}" width="${w95}" height="9" rx="4" fill="var(--blue)" opacity="0.9"><title>${f} p95 ${p95}ms</title></rect>`;
+    svg+=`<rect x="${padL}" y="${y+16}" width="${w50}" height="9" rx="4" fill="var(--seq-3)"><title>${f} p50 ${p50}ms</title></rect>`;
+    svg+=`<text x="${padL+Math.max(w50,w95)+6}" y="${y+rowH/2}" dominant-baseline="middle" style="font-variant-numeric:tabular-nums">${p95}ms</text>`;
+  });
+  svg+=`</svg>`;
+  $("#latency").innerHTML=svg;
+}
+
+let ALL_CASES=[], FILTER="all";
+function buildTable(cases){
+  ALL_CASES=cases;
+  const feats=["all",...FEAT_ORDER.filter(f=>cases.some(c=>c.feature===f))];
+  const fw=$("#filters"); fw.innerHTML="";
+  feats.forEach(f=>{
+    const b=el("button",null,f); b.setAttribute("aria-pressed",f===FILTER);
+    b.onclick=()=>{FILTER=f; drawTable();}; fw.appendChild(b);
+  });
+  drawTable();
+}
+function drawTable(){
+  document.querySelectorAll("#filters button").forEach(b=>b.setAttribute("aria-pressed", b.textContent===FILTER));
+  const rows=ALL_CASES.filter(c=>FILTER==="all"||c.feature===FILTER);
+  let html=`<thead><tr><th>Feature</th><th>Case</th><th>Result</th><th>Detail</th><th>Latency</th></tr></thead><tbody>`;
+  rows.forEach(c=>{
+    const ok=c.passed; const tag=ok?`<span class="tag good">PASS</span>`:`<span class="tag critical">FAIL</span>`;
+    html+=`<tr><td>${c.feature}</td><td class="mono">${c.id}</td><td>${tag}</td>
+      <td style="color:var(--ink-2)">${detailFor(c)}</td>
+      <td class="mono">${c.latency_ms?c.latency_ms+"ms":"—"}</td></tr>`;
+  });
+  html+=`</tbody>`;
+  if(!rows.length) html=`<tbody><tr><td colspan="5" class="empty" style="border:0">No cases.</td></tr></tbody>`;
+  $("#caseTable").innerHTML=html;
+}
+function detailFor(c){
+  const s=c.score||{};
+  if(c.feature==="guardian") return `tp ${s.tp||0} · fp ${s.fp||0} · fn ${s.fn||0}${s.missing&&s.missing.length?" · missing "+s.missing.join(","):""}`;
+  if(c.feature==="scribe" && s.med_recall!=null) return `meds ${pct(s.med_recall)} · orders ${pct(s.order_recall)}`;
+  if(s.expected_alert) return `expected alert: ${s.expected_alert}`;
+  if(c.actual&&c.actual.grounding) return `grounding ${pct(c.actual.grounding.overlap)}${c.actual.judge&&c.actual.judge.mean?" · judge "+c.actual.judge.mean:""}`;
+  if(c.actual&&c.actual.judge&&c.actual.judge.mean) return `judge ${c.actual.judge.mean}/5`;
+  if(s.error) return `<span style="color:var(--critical)">${s.error}</span>`;
+  return "";
+}
+
+// ---- load: prefer the JS shim (works over file://); else fetch; else drop ----
+function boot(){
+  if(window.EVAL_DATA){ render(window.EVAL_DATA); return; }
+  fetch("../results/latest.json").then(r=>r.json()).then(render).catch(()=>{ $("#drop").hidden=false; });
+}
+$("#file").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f) return;
+  f.text().then(t=>render(JSON.parse(t)));
+});
+["dragover","drop"].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault()));
+document.addEventListener("drop",e=>{
+  const f=e.dataTransfer.files[0]; if(f) f.text().then(t=>render(JSON.parse(t)));
+});
+$("#themeBtn").onclick=()=>{
+  const r=document.documentElement;
+  r.setAttribute("data-theme", r.getAttribute("data-theme")==="dark"?"light":"dark");
+};
+boot();
+</script>
+</body>
+</html>

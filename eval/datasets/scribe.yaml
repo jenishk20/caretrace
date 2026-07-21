@@ -1,0 +1,25 @@
+# Scribe extraction goldens. Meds/orders are matched fuzzily (case-insensitive contains).
+- id: chest_pain_aspirin_troponin
+  transcript: "Patient here with chest pain for two days. I started them on aspirin 81 milligrams. Recheck troponin in six hours."
+  expect_meds: ["aspirin"]
+  expect_orders: ["troponin"]
+
+- id: warfarin_history_recheck_labs
+  transcript: "Seventy year old on warfarin for atrial fibrillation. Ordered a CBC, recheck labs in four hours."
+  expect_meds: ["warfarin"]
+  expect_orders: ["labs"]
+
+- id: post_op_morphine_reassess
+  transcript: "Post-op day one. Started morphine for pain. Reassess pain in two hours and recheck vitals in one hour."
+  expect_meds: ["morphine"]
+  expect_orders: ["reassess"]
+
+- id: multi_med_admission
+  transcript: "New admission. Home meds include lisinopril and atorvastatin. Complaining of a cough. Start azithromycin."
+  expect_meds: ["lisinopril", "atorvastatin", "azithromycin"]
+  expect_orders: []
+
+- id: allergy_mentioned
+  transcript: "Patient reports a penicillin allergy. Ordered amoxicillin - hold that. Recheck troponin in three hours."
+  expect_meds: ["amoxicillin"]
+  expect_orders: ["troponin"]

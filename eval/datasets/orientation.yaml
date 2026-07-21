@@ -1,0 +1,10 @@
+# Bedside orientation: must be grounded, warm, and give NO clinical advice.
+- id: post_op_elderly
+  reason_for_visit: recovery after hip surgery
+  seed_nodes:
+    - {ntype: procedure, label: Hip replacement, category: null}
+
+- id: pneumonia_admission
+  reason_for_visit: admitted for pneumonia
+  seed_nodes:
+    - {ntype: condition, label: Pneumonia, category: null}

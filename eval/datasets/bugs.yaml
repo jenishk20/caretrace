@@ -1,0 +1,36 @@
+# Findings from the evaluation. Rendered on the dashboard and detailed in eval/BUGS.md.
+# status: fixed | open | refuted
+- id: grounding_false_negative_on_refusal
+  title: "Eval scorer false-failed honest refusals"
+  status: fixed
+  symptom: "consent 'anesthesia_question' failed even though Gemma correctly said the form doesn't state whether the patient is asleep."
+  root_cause: "score_grounding used token overlap only; an answer ABOUT the absence of info naturally shares few words with the source, so honest refusals looked like hallucinations."
+  fix: "Detect refusal phrasing (is_refusal) and treat refusals as non-hallucinating; a refusal now passes grounding."
+
+- id: grounding_false_negative_on_paraphrase
+  title: "Eval scorer over-penalized faithful paraphrase"
+  status: fixed
+  symptom: "consent 'alternatives_question' was faithful and grounded but scored 0.35 overlap and failed."
+  root_cause: "The overlap threshold (0.5/0.4) was used as a QUALITY bar; paraphrased-but-faithful answers fall below it."
+  fix: "Overlap is now a lenient anti-hallucination FLOOR (0.3). Faithfulness/quality is graded separately by the Tier-3 LLM judge."
+
+- id: discharge_deflects_out_of_doc
+  title: "Discharge Q&A deflected instead of refusing"
+  status: fixed
+  symptom: "Asked 'Can I drink alcohol with my pain medication?' (not on the sheet), discharge answered with unrelated wound-care/follow-up facts, implying an answer."
+  root_cause: "features/discharge.py ANSWER_PROMPT lacked the 'if it isn't addressed, say so plainly' instruction that features/consent.py already has."
+  fix: "Added the explicit refusal instruction to the discharge answer prompt. out_of_doc_refusal now reliably refuses."
+
+- id: same_batch_interaction_miss
+  title: "Same-dictation interaction miss (candidate — refuted)"
+  status: refuted
+  symptom: "Hypothesis: two mutually-conflicting drugs in ONE dictation might not cross-check each other."
+  root_cause: "Investigated: scribe.capture() persists ALL extracted facts via ingest_facts BEFORE review_new_nodes runs, so each new med sees the other as already-active. Both adversarial cases fire correctly."
+  fix: "No change needed — architecture already handles it. Documented as a verified negative."
+
+- id: nondeterministic_pass_fail
+  title: "Pass/fail flickered between runs"
+  status: fixed
+  symptom: "The same model case passed on one run and failed on the next."
+  root_cause: "The product decodes at temperature 0.1-0.2, so free-text outputs varied run to run."
+  fix: "The eval forces greedy decoding (temperature 0) for evaluated calls, so the suite is repeatable. Two consecutive runs now match exactly."

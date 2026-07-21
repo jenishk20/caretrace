@@ -87,6 +87,18 @@ def set_node_completed(node_id: int) -> None:
         conn.execute("UPDATE graph_nodes SET completed=1, status='resolved', updated_at=? WHERE id=?", (db.now(), node_id))
 
 
+def supersede_node(node_id: int) -> dict | None:
+    """Deactivate a fact/order while retaining it for the audit trail."""
+    with db.connect() as conn:
+        conn.execute(
+            "UPDATE graph_nodes SET status='superseded', updated_at=? WHERE id=?",
+            (db.now(), node_id),
+        )
+        return db.row_to_dict(conn.execute(
+            "SELECT * FROM graph_nodes WHERE id=?", (node_id,)
+        ).fetchone())
+
+
 def context_text(patient_id: int) -> str:
     """Render the patient's active graph as compact grounding text for Gemma —
     used by ask-the-room, catch-me-up, handoff, orientation, and patient chat.

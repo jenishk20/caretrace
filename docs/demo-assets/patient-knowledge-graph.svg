@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title description">
+  <title id="title">MedSignal patient knowledge graph</title>
+  <desc id="description">A clean rendering of the MedSignal dashboard graph using five synthetic patient facts.</desc>
+  <defs>
+    <radialGradient id="surface" cx="50%" cy="48%" r="70%">
+      <stop offset="0" stop-color="#1a4b58" stop-opacity=".35"/>
+      <stop offset=".62" stop-color="#05131c" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#071b2b"/>
+    </radialGradient>
+    <radialGradient id="patientHalo">
+      <stop stop-color="#64e8d2" stop-opacity=".28"/>
+      <stop offset="1" stop-color="#64e8d2" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="nodeShadow" x="-60%" y="-60%" width="220%" height="220%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity=".38"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="900" fill="#071b2b"/>
+  <rect x="65" y="64" width="1470" height="770" rx="22" fill="url(#surface)" stroke="#376b7a" stroke-width="2"/>
+  <text x="120" y="126" fill="#a8c0c8" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="600">MedSignal's memory — every interaction adds a node</text>
+
+  <circle cx="800" cy="465" r="320" fill="none" stroke="#64e8d2" stroke-opacity=".09" stroke-width="2" stroke-dasharray="3 8"/>
+  <circle cx="800" cy="465" r="220" fill="none" stroke="#76a9ff" stroke-opacity=".1" stroke-width="2"/>
+
+  <g stroke-linecap="round" stroke="#76a9ff" stroke-opacity=".28" stroke-width="2">
+    <line x1="800" y1="465" x2="800" y2="295"/>
+    <line x1="800" y1="465" x2="962" y2="412"/>
+    <line x1="800" y1="465" x2="900" y2="603"/>
+    <line x1="800" y1="465" x2="700" y2="603"/>
+    <line x1="800" y1="465" x2="638" y2="412"/>
+  </g>
+
+  <g transform="translate(800 465)" filter="url(#nodeShadow)">
+    <circle r="60" fill="url(#patientHalo)" transform="scale(2)"/>
+    <circle r="36" fill="#123949" stroke="#64e8d2" stroke-width="3"/>
+    <text text-anchor="middle" dy="7" fill="#eafcff" font-family="Arial, sans-serif" font-size="20">✦</text>
+    <text text-anchor="middle" y="72" fill="#c5d6e5" font-family="Inter, Arial, sans-serif" font-size="18">María</text>
+  </g>
+
+  <g transform="translate(800 295)" filter="url(#nodeShadow)">
+    <circle r="22" fill="#102430" stroke="#ff6f82" stroke-width="2"/>
+    <text text-anchor="middle" dy="5" fill="#ffb0bc" font-family="Arial, sans-serif" font-size="15">+</text>
+    <text text-anchor="middle" y="45" fill="#c5d6e5" font-family="Inter, Arial, sans-serif" font-size="17">Chest pain</text>
+  </g>
+
+  <g transform="translate(962 412)" filter="url(#nodeShadow)">
+    <circle r="33" fill="none" stroke="#ff6f82" stroke-opacity=".75" stroke-width="1.5"/>
+    <circle r="24" fill="#102430" stroke="#ff6f82" stroke-width="2.5"/>
+    <text text-anchor="middle" dy="6" fill="#ffaaa9" font-family="Arial, sans-serif" font-size="16">!</text>
+    <text text-anchor="middle" y="49" fill="#c5d6e5" font-family="Inter, Arial, sans-serif" font-size="17">Penicillin allergy</text>
+    <text text-anchor="middle" y="73" fill="#ffb0bc" font-family="Inter, Arial, sans-serif" font-size="13">requires review</text>
+  </g>
+
+  <g transform="translate(900 603)" filter="url(#nodeShadow)">
+    <circle r="24" fill="#102430" stroke="#76a9ff" stroke-width="2.5"/>
+    <text text-anchor="middle" dy="6" fill="#a5d8ff" font-family="Arial, sans-serif" font-size="15">℞</text>
+    <text text-anchor="middle" y="49" fill="#c5d6e5" font-family="Inter, Arial, sans-serif" font-size="17">Warfarin</text>
+  </g>
+
+  <g transform="translate(700 603)" filter="url(#nodeShadow)">
+    <circle r="22" fill="#102430" stroke="#f7c86f" stroke-width="2.5"/>
+    <text text-anchor="middle" dy="5" fill="#ffd995" font-family="Arial, sans-serif" font-size="15">◆</text>
+    <text text-anchor="middle" y="47" fill="#c5d6e5" font-family="Inter, Arial, sans-serif" font-size="17">Atrial fibrillation</text>
+  </g>
+
+  <g transform="translate(638 412)" filter="url(#nodeShadow)">
+    <circle r="20" fill="#102430" stroke="#8da0bf" stroke-width="2"/>
+    <text text-anchor="middle" dy="5" fill="#c8d3eb" font-family="Arial, sans-serif" font-size="14">♥</text>
+    <text text-anchor="middle" y="43" fill="#c5d6e5" font-family="Inter, Arial, sans-serif" font-size="17">BP 148/90</text>
+  </g>
+
+  <g transform="translate(121 770)" font-family="Inter, Arial, sans-serif" font-size="16" fill="#c5d6e5">
+    <text x="0" y="0" fill="#a5d8ff">℞</text><text x="24" y="0">Medication</text>
+    <text x="170" y="0" fill="#ffaaa9">!</text><text x="194" y="0">Allergy</text>
+    <text x="305" y="0" fill="#ffb0bc">+</text><text x="329" y="0">Symptom</text>
+    <text x="455" y="0" fill="#ffd995">◆</text><text x="479" y="0">Condition</text>
+    <text x="625" y="0" fill="#c8d3eb">♥</text><text x="649" y="0">Vital</text>
+  </g>
+</svg>

@@ -29,6 +29,12 @@ text   ───────────────────┘             
 - A typed correction records an audit-linked correction rather than silently overwriting history.
 - Notes, codes, handoffs, debriefs, reminders, and order actions stay as drafts until a clinician explicitly approves them.
 
+## Patient knowledge graph
+
+MedSignal keeps an evidence-linked local graph of each patient's recorded facts, so the Guardian can surface conflicts for clinician review instead of relying on memory alone.
+
+![Clean MedSignal dashboard patient knowledge graph](docs/demo-assets/patient-knowledge-graph.svg)
+
 ## Safety and privacy boundary
 
 - Runtime inference, OCR, safety rules, and SQLite storage stay on the local MedSignal host.
@@ -55,8 +61,8 @@ text   ───────────────────┘             
 1. **Clone the repository and enter it.**
 
    ```bash
-   git clone https://github.com/jenishk20/caretrace.git
-   cd caretrace
+   git clone https://github.com/jenishk20/MedSignal.git
+   cd MedSignal
    ```
 
 2. **Install local prerequisites.** On macOS with Homebrew:

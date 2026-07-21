@@ -23,15 +23,16 @@ export default function AgentRunView({ patient, pid, staff, refresh }) {
   const [bundle, setBundle] = useState(null);
   const [approvalBusy, setApprovalBusy] = useState(false);
   const [approvalResult, setApprovalResult] = useState(null);
-  const [recentRuns, setRecentRuns] = useState([]);
   const [liveTrace, setLiveTrace] = useState([]);
   const recorderRef = useRef(null);
   const audioStreamRef = useRef(null);
   const videoRef = useRef(null);
   const cameraStreamRef = useRef(null);
 
-  const loadRecent = () => api.agentRuns(pid, 3).then((data) => setRecentRuns(data.runs || [])).catch(() => {});
-  useEffect(() => { loadRecent(); return () => { audioStreamRef.current?.getTracks().forEach((track) => track.stop()); cameraStreamRef.current?.getTracks().forEach((track) => track.stop()); }; }, [pid]);
+  useEffect(() => () => {
+    audioStreamRef.current?.getTracks().forEach((track) => track.stop());
+    cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+  }, []);
 
   function chooseMode(next) {
     setMode(next);
@@ -146,7 +147,7 @@ export default function AgentRunView({ patient, pid, staff, refresh }) {
       if (!completed) throw new Error("The local agent timed out before completing the run.");
       if (completed.status === "failed") throw new Error("The local agent could not complete this run.");
       setBundle(completed.bundle);
-      await Promise.all([refresh?.(), loadRecent()]);
+      await refresh?.();
     } catch (exc) { setError(exc.message); } finally { setBusy(false); }
   }
 
@@ -156,7 +157,7 @@ export default function AgentRunView({ patient, pid, staff, refresh }) {
     try {
       const result = await api.approveAgent({ patient_id: pid, encounter_id: bundle.encounter_id, approvals });
       setApprovalResult(result);
-      await Promise.all([refresh?.(), loadRecent()]);
+      await refresh?.();
     } catch (exc) { setError(exc.message); } finally { setApprovalBusy(false); }
   }
 
@@ -177,8 +178,7 @@ export default function AgentRunView({ patient, pid, staff, refresh }) {
         </section>
         <AgentWorkingPanel busy={busy} inputKind={mode} trace={bundle?.trace || liveTrace} />
       </div>
-      {bundle && <div className="results-stack fade-up"><AgentReview bundle={bundle} onApprove={approve} busy={approvalBusy} result={approvalResult} /><TracePanel trace={bundle.trace} recentRuns={recentRuns} /></div>}
-      {!bundle && recentRuns.length > 0 && <TracePanel trace={[]} recentRuns={recentRuns} />}
+      {bundle && <div className="results-stack fade-up"><AgentReview bundle={bundle} onApprove={approve} busy={approvalBusy} result={approvalResult} /><TracePanel trace={bundle.trace} /></div>}
       <style>{`
         .agent-run-view{display:grid;gap:18px}.agent-hero{display:flex;align-items:center;justify-content:space-between;gap:20px}.agent-hero h1{font-size:29px;letter-spacing:-.03em;margin:4px 0}.agent-hero p{color:var(--text-dim);max-width:720px}.trust-lock{padding:12px 14px;border:1px solid var(--teal-dim);border-radius:12px;display:grid;grid-template-columns:auto auto;gap:0 7px;color:var(--teal);min-width:140px}.trust-lock span{grid-row:1/3}.trust-lock small{color:var(--text-mute);font:10px var(--mono)}
         .mode-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.mode-tabs button{display:grid;grid-template-columns:30px 1fr;text-align:left;align-items:center;padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--text-dim)}.mode-tabs button>span{grid-row:1/3;font-size:20px}.mode-tabs button small{color:var(--text-mute)}.mode-tabs button.on{border-color:var(--teal);background:var(--panel-hi);box-shadow:0 0 0 3px var(--teal-glow);color:var(--text)}

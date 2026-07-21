@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from core import db, graph, guardian, repo, voice
 from core.config import MEDIA_DIR, OLLAMA_HOST, OLLAMA_MODEL, ROOT
-from features import consent, discharge, handoff, memory, orientation, patient, prescription, scribe
+from features import agent, consent, discharge, handoff, memory, orientation, patient, prescription, scribe
 
 WEB_DIST = ROOT / "web" / "dist"
 
@@ -61,6 +61,12 @@ def gemma_logs(limit: int = 20):
     live console. Proves inference is happening locally during the demo."""
     from core.llm import recent_calls
     return {"model": OLLAMA_MODEL, "calls": recent_calls(limit)}
+
+
+@app.get("/api/model/logs")
+def model_logs(limit: int = 20):
+    """Neutral alias retained alongside the legacy demo endpoint."""
+    return gemma_logs(limit)
 
 
 # --- auth --------------------------------------------------------------------
@@ -273,7 +279,7 @@ async def transcribe(audio: UploadFile = File(...)):
 
 # --- feature routers ---------------------------------------------------------
 
-for r in (scribe, consent, discharge, handoff, memory, orientation, patient, prescription):
+for r in (scribe, consent, discharge, handoff, memory, orientation, patient, prescription, agent):
     app.include_router(r.router)
 
 

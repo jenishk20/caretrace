@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from core import curated, graph, guardian, llm, repo, vision, voice
+from core import curated, db, graph, guardian, llm, repo, vision, voice
 from core.config import REASONING_EFFORT_HIGH, REASONING_EFFORT_LOW
 
 MAX_STEPS = 8
@@ -377,3 +377,36 @@ def get_trace(encounter_id: int) -> list[dict]:
 
 def recent_runs(patient_id: int, limit: int = 3) -> list[dict]:
     return repo.list_agent_runs(patient_id, limit)
+
+
+def patient_roi(patient_id: int) -> dict:
+    """Conservative, clearly labeled estimates derived from local records."""
+    with db.connect() as conn:
+        row = conn.execute(
+            """SELECT COUNT(*) AS runs, COALESCE(AVG(latency_ms), 0) AS avg_latency_ms
+               FROM agent_runs WHERE patient_id=? AND status!='failed'""",
+            (patient_id,),
+        ).fetchone()
+        code_count = conn.execute(
+            "SELECT COUNT(*) FROM billing_codes WHERE patient_id=?", (patient_id,)
+        ).fetchone()[0]
+        near_misses = conn.execute(
+            "SELECT COUNT(*) FROM guardian_alerts WHERE patient_id=? AND severity='critical'",
+            (patient_id,),
+        ).fetchone()[0]
+    runs = int(row["runs"] or 0)
+    return {
+        "runs": runs,
+        "documentation_minutes_saved_estimate": runs * 8,
+        "coding_revenue_captured_estimate_usd": int(code_count) * 75,
+        "finalized_codes": int(code_count),
+        "near_misses_prevented": int(near_misses),
+        "runs_per_shift": runs,
+        "avg_latency_ms": round(float(row["avg_latency_ms"] or 0)),
+        "methodology": {
+            "documentation": "8 minutes estimated per completed agent run",
+            "coding": "$75 nominal estimate per finalized code; not actual reimbursement",
+            "near_misses": "critical deterministic Guardian alerts",
+            "throughput": "all recorded runs in the current demo dataset",
+        },
+    }

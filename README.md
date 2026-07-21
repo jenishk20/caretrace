@@ -1,116 +1,129 @@
 # MedSignal
 
-MedSignal is a local-first clinical intelligence assistant for hospital teams. It turns clinician-confirmed encounter facts into an evidence-linked patient timeline, runs deterministic safety checks, and produces clinician-approved drafts for documentation, handoff, billing review, and patient debriefs.
+**MedSignal is a local-first clinical intelligence assistant for hospital teams.** It turns clinician-confirmed encounter facts into an evidence-linked patient timeline, runs deterministic safety checks, and prepares clinician-approved drafts for documentation, handoff, billing review, and patient debriefs.
 
-All demo records are synthetic. MedSignal is clinical decision support, not a diagnosis, prescription, or autonomous medication-safety system.
+> **Important:** Every record in this repository is synthetic. MedSignal is clinical decision support—not a diagnosis, prescription, or autonomous medication-safety system.
 
-## Built with Codex and GPT-5.6
+## Why MedSignal
 
-- **Agentic workflows:** Codex and GPT-5.6 accelerated the design and implementation of the bounded local agent that turns speech, images, and text into reviewable, source-linked drafts.
-- **Local runtime model:** MedSignal runs `gpt-oss:20b` through Ollama on the local machine, alongside local transcription, Tesseract OCR, and SQLite storage—so patient context stays in the care environment.
-- **Safety by design:** We used Codex to help implement and test the boundary between model-generated language and deterministic Guardian rules for medication risks, contradictions, and incomplete follow-ups.
-- **Clinician control and evaluation:** Codex and GPT-5.6 accelerated the React/FastAPI workflow, approval boundaries, debugging, and the repeatable evaluation harness that checks routes, safety signals, grounded outputs, and validated billing drafts.
+At the bedside, important context can be spread across a conversation, an old chart entry, a prescription photograph, and an open order. MedSignal connects those signals into one reviewable patient story before a missed connection becomes harm.
 
-GPT-5.6 and Codex were used during development. They are not part of the runtime patient-care workflow: at runtime, MedSignal uses the local `gpt-oss:20b` model, deterministic code, and clinician review.
+It is designed for environments where privacy and clinical control matter: runtime inference, transcription, OCR, safety rules, and storage remain on the local MedSignal host.
+
+## Built with GPT-5.6 and Codex
+
+GPT-5.6 in Codex was an engineering collaborator throughout the project. It accelerated:
+
+- **Workflow design:** mapping the capture → evidence → review → approval loop and the boundaries between model output, deterministic checks, and clinician action.
+- **Agent implementation:** building the bounded local tool orchestration that turns speech, images, and text into source-linked, reviewable draft bundles.
+- **Safety engineering:** implementing approval gates, audit-linked corrections, deterministic Guardian rules, and tests for contradiction and medication-risk scenarios.
+- **Product delivery:** building and reviewing the FastAPI/React workflow, local runtime integration, and repeatable evaluation harness.
+
+GPT-5.6 and Codex were used during development, **not** in the runtime patient-care workflow. At runtime, MedSignal uses local `gpt-oss:20b`, deterministic code, and clinician review.
 
 ## Local clinical workflow agent
 
-One clinician input becomes a complete, local, clinician-reviewed workflow—without sending patient context to the cloud.
+One clinician input creates a reviewable draft bundle without sending patient context to a cloud model:
 
 ```text
 speech ── faster-whisper ─┐
-image  ── Tesseract OCR ──┼─> GPT-OSS agent ─> MedSignal graph + Guardian ─> clinician approval
-text   ───────────────────┘
+image  ── Tesseract OCR ──┼─> local gpt-oss tool loop ─> clinician review
+text   ───────────────────┘             │
+                                    MedSignal graph + Guardian
 ```
 
 1. **Capture locally.** A clinician speaks, types, or photographs a prescription. Faster-whisper and Tesseract convert speech and images to text on-device.
-2. **Organize the encounter.** The local GPT-OSS agent extracts source-linked facts, updates the patient graph, and prepares a reviewable bundle: clinical note, safety checks, billing candidates, SBAR handoff, and patient explanation.
+2. **Organize the encounter.** The local agent extracts source-linked facts, updates the patient graph, and prepares a reviewable bundle: clinical note, safety checks, billing candidates, SBAR handoff, and patient explanation.
 3. **Verify in code.** Guardian applies deterministic rules to detect medication risks, contradictions, and incomplete follow-ups. The model never makes the safety decision.
 4. **Keep the clinician in control.** Every note, code, handoff, patient summary, reminder, and order action remains a draft until explicitly approved. Corrections are audit-linked; nothing is silently overwritten.
 
 ## Patient knowledge graph
 
-MedSignal keeps an evidence-linked local graph of each patient's recorded facts, so the Guardian can surface conflicts for clinician review instead of relying on memory alone.
+MedSignal keeps an evidence-linked local graph of each patient's recorded facts, so Guardian can surface conflicts for clinician review instead of relying on memory alone.
 
-![Clean MedSignal dashboard patient knowledge graph](docs/demo-assets/patient-knowledge-graph.svg)
+![MedSignal patient knowledge graph](docs/demo-assets/patient-knowledge-graph.svg)
 
 ## Safety and privacy boundary
 
-- Runtime inference, OCR, safety rules, and SQLite storage stay on the local MedSignal host.
-- `gpt-oss:20b` is the language layer only: it structures stated facts and drafts language.
-- Deterministic code in `core/curated.py` and `core/guardian.py` owns medication categories, interaction rules, clinical alerts, and billing-code validity.
-- Every Guardian alert is source-linked and requires clinician review.
-- Public traces show tool names, semantic arguments, and outcome summaries. Private reasoning is never persisted or shown.
+- Runtime inference, OCR, safety rules, and SQLite storage remain on the local MedSignal host.
+- `gpt-oss:20b` is the language and orchestration layer: it structures stated facts, calls approved local tools, and drafts language.
+- Deterministic code in [`core/curated.py`](core/curated.py) and [`core/guardian.py`](core/guardian.py) owns medication categories, interaction rules, clinical alerts, and billing-code validation.
+- Every Guardian alert is source-linked and explicitly requires clinician review.
+- Public traces show tool names, semantic arguments, and outcome summaries. Private reasoning is neither persisted nor displayed.
 - Patient-facing summaries restate only clinician-confirmed, source-grounded facts.
 
 ## Key modules
 
-- `core/agent.py` — bounded tool orchestration, draft bundle construction, approval commits, and trace persistence.
-- `core/guardian.py` — deterministic allergy, interaction, contradiction, and overdue-order checks.
-- `core/curated.py` — auditable clinical and coding lookup tables.
-- `core/vision.py` — local image validation and Tesseract OCR; gpt-oss receives text, never images.
-- `features/agent.py` — run, upload, review, trace, and recent-run APIs.
-- `web/src/views/AgentRunView.jsx` — unified clinician capture and approval workflow.
-- `eval/agent_eval.py` — repeatable route, cross-modal safety, and coding validation checks.
+- [`core/agent.py`](core/agent.py) — bounded tool orchestration, draft bundles, approval commits, and trace persistence.
+- [`core/guardian.py`](core/guardian.py) — deterministic allergy, interaction, contradiction, and overdue-order checks.
+- [`core/curated.py`](core/curated.py) — auditable clinical and coding lookup tables.
+- [`core/vision.py`](core/vision.py) — local image validation and Tesseract OCR; `gpt-oss` receives extracted text, not images.
+- [`features/agent.py`](features/agent.py) — run, upload, review, trace, and recent-run APIs.
+- [`web/src/views/AgentRunView.jsx`](web/src/views/AgentRunView.jsx) — unified clinician capture and approval workflow.
+- [`eval/agent_eval.py`](eval/agent_eval.py) — repeatable route, cross-modal safety, and coding validation checks.
 
 ## Run MedSignal locally
 
-**Supported demo platform:** macOS with Apple Silicon, Python 3.11+, Node 22.12+, Ollama, and Tesseract. The application is local-first: no OpenAI API key or cloud account is required at runtime.
+### Prerequisites
 
-1. **Clone the repository and enter it.**
+- Python 3.11+
+- Node 22.12+
+- [Ollama](https://ollama.com)
+- [Tesseract](https://github.com/tesseract-ocr/tesseract)
 
-   ```bash
-   git clone https://github.com/jenishk20/MedSignal.git
-   cd MedSignal
-   ```
+Tested demo setup on macOS with Homebrew:
 
-2. **Install local prerequisites.** On macOS with Homebrew:
+```bash
+brew install python@3.11 node ollama tesseract
+```
 
-   ```bash
-   brew install python@3.11 node ollama tesseract
-   ```
+Clone the repository and install the local runtime model:
 
-3. **Install the local runtime model.**
+```bash
+git clone https://github.com/jenishk20/caretrace.git
+cd caretrace
 
-   ```bash
-   ollama pull gpt-oss:20b
-   ```
+ollama pull gpt-oss:20b
+```
 
-4. **Install MedSignal's backend and frontend dependencies.**
+Install backend and frontend dependencies, then build the frontend:
 
-   ```bash
-   python3.11 -m venv .venv
-   source .venv/bin/activate
-   pip install -r requirements.txt
-   npm --prefix web install
-   npm --prefix web run build
-   ```
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 
-5. **Start the application.** The launcher starts Ollama with the demo performance settings, warms the local model, and serves the app.
+npm --prefix web install
+npm --prefix web run build
+```
 
-   ```bash
-   ./run.sh
-   ```
+Start the application:
 
-6. **Open the local app.** Visit [http://localhost:8000](http://localhost:8000). On the first launch, MedSignal seeds synthetic demo data automatically.
+```bash
+./run.sh
+```
 
-### Synthetic demo accounts
+The launcher starts and warms the local model, then serves the app at [http://localhost:8000](http://localhost:8000). No OpenAI API key or cloud account is required at runtime. On first launch, MedSignal automatically seeds synthetic demo data.
+
+## Synthetic demo accounts
 
 | Workspace | Username | Password | What to test |
-| --- | --- | --- | --- |
-| Clinician workspace | `doctor` | `confide` | María's evidence-linked record, agent workflow, Guardian checks, review, and approval flow. |
-| Patient space | `maria` | `confide` | Spanish-language patient questions, care summaries, and consent explanations. |
+|---|---|---|---|
+| Clinician workspace | `doctor` | `confide` | María’s evidence-linked record, agent workflow, Guardian checks, review, and approval flow. |
+| Patient space | `maria` | `confide` | Spanish-language patient questions, clinician-approved summaries, and consent explanations. |
 
 All seeded records are synthetic and are included solely for demonstration and testing.
 
-### Suggested judge walkthrough
+## Suggested judge walkthrough
 
 1. Sign in to the clinician workspace as `doctor` and open **María González**.
-2. Run a bedside workflow from speech, text, or a prescription image; review the visible trace, evidence-linked facts, Guardian signals, and draft approvals.
+2. Run a bedside workflow from speech, typed text, or a prescription image; inspect the trace, source-linked facts, Guardian signals, and approval controls.
 3. Open the patient space as `maria` to verify Spanish-language answers and patient-facing summaries.
-4. Return to the clinician workspace and open **Consent** to generate and hear the consent explanation in the patient's portal language.
+4. Return to the clinician workspace and open **Consent** to generate and hear a clinician-reviewed explanation in the patient's portal language.
 
 ## Verification
+
+Run these commands from an activated virtual environment:
 
 ```bash
 python -m pytest tests -q
@@ -119,4 +132,8 @@ python -m compileall -q core features app.py
 npm --prefix web run build
 ```
 
-The agent evaluation verifies all required tools run for each workflow, the synthetic prescription scenario produces the expected critical deterministic alert, and billing suggestions contain only curated, validated codes.
+The agent evaluation verifies required tools across workflows, confirms that the synthetic prescription scenario produces the expected critical deterministic alert, and checks that billing suggestions contain only curated, validated codes.
+
+---
+
+The repository name remains **CareTrace**; this README and the demo materials use the product name **MedSignal**.

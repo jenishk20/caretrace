@@ -1,20 +1,20 @@
-"""Local document OCR via Gemma's native vision — no separate OCR engine."""
+"""Local document OCR via Tesseract."""
 from __future__ import annotations
 
+import subprocess
 import uuid
 
 from core.config import IMAGES_DIR
-from core.llm import ask_vision
-
-OCR_PROMPT = (
-    "You are reading a medical document (a consent form or discharge instructions). "
-    "Transcribe ALL text you can see, verbatim, preserving line breaks and section "
-    "headings. Do not summarize, explain, or add anything. Output only the transcribed text."
-)
 
 
 def ocr(image_path: str) -> str:
-    return ask_vision(OCR_PROMPT, image_path)
+    result = subprocess.run(
+        ["tesseract", image_path, "stdout"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return result.stdout.strip()
 
 
 def save_image(data: bytes, suffix: str = ".png") -> str:

@@ -10,11 +10,12 @@ IMAGES_DIR = MEDIA_DIR / "images"
 
 DB_PATH = DATA_DIR / "confide.db"
 
-# --- Gemma via Ollama --------------------------------------------------------
-# `gemma4` default tag points to the 8B family in this project setup.
-# This is the quality-first default for demos and feature behavior.
+# --- gpt-oss via Ollama ------------------------------------------------------
 OLLAMA_HOST = "http://localhost:11434"
-OLLAMA_MODEL = "gemma4"
+OLLAMA_MODEL = "gpt-oss:20b"
+AGENT_MODEL = "gpt-oss:20b"
+REASONING_EFFORT_HIGH = "high"
+REASONING_EFFORT_LOW = "low"
 LLM_TIMEOUT = 120  # seconds — local models can occasionally stall
 
 # --- faster-whisper (STT) ----------------------------------------------------
@@ -27,7 +28,7 @@ PIPER_VOICE = MODELS_DIR / "en_US-lessac-medium.onnx"
 PIPER_CONFIG = MODELS_DIR / "en_US-lessac-medium.onnx.json"
 
 # --- Guardian phrasing -------------------------------------------------------
-# The Guardian's alert sentences can be phrased by Gemma (nicer, but adds ~30s of
+# The Guardian's alert sentences can be phrased by the local model (nicer, but adds ~30s of
 # latency per alert on CPU) or by fast built-in templates (instant, still natural).
 # Instant templates keep the "caught it live" beat snappy on stage.
 GUARDIAN_LLM_PHRASING = False

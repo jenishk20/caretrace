@@ -1,172 +1,40 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { session } from "../lib/session.js";
 import NetworkPill from "../components/NetworkPill.jsx";
 
 export default function Roster() {
-  const nav = useNavigate();
-  const staff = session.staff();
-  const [patients, setPatients] = useState([]);
-  const [showAdmit, setShowAdmit] = useState(false);
-
+  const nav = useNavigate(); const staff = session.staff();
+  const [patients, setPatients] = useState([]); const [showAdmit, setShowAdmit] = useState(false); const [query, setQuery] = useState("");
   const load = () => api.listPatients().then(setPatients).catch(() => {});
   useEffect(() => { load(); }, []);
+  const visible = useMemo(() => patients.filter((patient) => `${patient.name} ${patient.room || ""} ${patient.mrn || ""}`.toLowerCase().includes(query.toLowerCase())), [patients, query]);
+  const admitted = patients.filter((patient) => patient.status === "admitted").length;
+  const logout = () => { session.clearStaff(); nav("/"); };
 
-  function logout() {
-    session.clearStaff();
-    nav("/");
-  }
-
-  return (
-    <div style={{ minHeight: "100%" }}>
-      <div className="topbar">
-        <div className="row" style={{ gap: 10 }}>
-          <span style={{ color: "var(--teal)", fontSize: 20 }}>◈</span>
-          <b>CareTrace</b>
-          <span className="muted" style={{ fontSize: 13 }}>· Care roster</span>
-        </div>
-        <div className="row" style={{ gap: 14 }}>
-          <NetworkPill />
-          <span className="pill">🩺 {staff?.name}</span>
-          <button className="btn btn-ghost" style={{ padding: "7px 12px" }} onClick={logout}>Log out</button>
-        </div>
-      </div>
-
-      <div style={{ maxWidth: 980, margin: "0 auto", padding: 32 }}>
-        <div className="row between" style={{ marginBottom: 20 }}>
-          <div>
-            <h1 style={{ fontSize: 26, letterSpacing: "-0.02em" }}>Patients</h1>
-            <p className="muted">Pick a patient to open their living record.</p>
-          </div>
-          <button className="btn btn-primary" onClick={() => setShowAdmit(true)}>+ Admit patient</button>
-        </div>
-
-        <div className="grid">
-          {patients.map((p) => (
-            <button key={p.id} className="pt-card" onClick={() => nav(`/doctor/patient/${p.id}`)}>
-              <div className="row between">
-                <div className="avatar">{p.name.split(" ").map((w) => w[0]).slice(0, 2).join("")}</div>
-                <span className={`tag ${p.status}`} style={{
-                  background: p.status === "admitted" ? "rgba(62,224,138,0.12)" : "var(--panel-2)",
-                  color: p.status === "admitted" ? "var(--ok)" : "var(--text-mute)",
-                }}>{p.status}</span>
-              </div>
-              <div className="pt-name">{p.name}</div>
-              <div className="muted" style={{ fontSize: 13 }}>
-                {p.age ? `${p.age} yrs · ` : ""}Room {p.room || "—"} · {p.mrn || "no MRN"}
-              </div>
-              {p.reason_for_visit && <div className="pt-reason">{p.reason_for_visit}</div>}
-            </button>
-          ))}
-          {patients.length === 0 && <div className="muted">No patients yet — admit one to begin.</div>}
-        </div>
-      </div>
-
-      {showAdmit && <AdmitModal staff={staff} onClose={() => setShowAdmit(false)} onDone={(p) => { setShowAdmit(false); load(); nav(`/doctor/patient/${p.id}`); }} />}
-
-      <style>{`
-        .topbar { display:flex; justify-content:space-between; align-items:center; padding:16px 28px;
-          border-bottom:1px solid var(--line); background:rgba(10,14,26,0.7); backdrop-filter:blur(10px);
-          position:sticky; top:0; z-index:10; }
-        .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
-        .pt-card { text-align:left; padding:20px; background:linear-gradient(180deg,var(--panel),var(--bg-soft));
-          border:1px solid var(--line); border-radius:var(--radius); transition:all 0.16s; }
-        .pt-card:hover { border-color:var(--teal-dim); transform:translateY(-2px); box-shadow:var(--shadow-lg); }
-        .avatar { width:42px;height:42px;border-radius:12px;background:var(--panel-hi);display:grid;place-items:center;
-          font-weight:700;color:var(--teal); border:1px solid var(--line); }
-        .pt-name { font-size:18px; font-weight:700; margin:14px 0 2px; }
-        .pt-reason { margin-top:12px; font-size:13px; color:var(--text-dim); background:var(--bg-soft);
-          padding:8px 12px; border-radius:8px; border:1px solid var(--line-soft); }
-      `}</style>
-    </div>
-  );
+  return <div className="roster-page">
+    <header className="roster-nav"><div className="row" style={{ gap: 10 }}><span className="roster-mark">✦</span><b>CareTrace</b><span className="roster-nav-label">CLINICAL ROSTER</span></div><div className="row" style={{ gap: 12 }}><NetworkPill /><span className="staff-chip">🩺 {staff?.name}</span><button className="btn btn-ghost roster-logout" onClick={logout}>Log out</button></div></header>
+    <main className="roster-main">
+      <section className="roster-hero fade-up"><div><div className="roster-kicker"><i />LIVE CARE CENSUS</div><h1>Start with the<br /><em>whole picture.</em></h1><p>Open a living record to see the latest encounters, connected facts, and Guardian concerns in one place.</p></div><div className="roster-actions"><button className="btn btn-primary" onClick={() => setShowAdmit(true)}>＋ Admit patient</button><span>Every new admission begins as an evidence-linked record.</span></div></section>
+      <section className="census-strip"><Census icon="◈" label="Patients" value={patients.length} note="in your workspace" /><Census icon="●" label="Admitted" value={admitted} note="active records" tone="ok" /><Census icon="▣" label="Local mode" value="ON" note="network optional" tone="teal" /></section>
+      <section className="roster-list"><div className="roster-list-head"><div><span className="section-kicker">PATIENTS</span><h2>Today’s roster</h2></div><label className="roster-search"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, room, or MRN" /></label></div>
+        <div className="patient-grid">{visible.map((patient) => <PatientCard key={patient.id} patient={patient} onOpen={() => nav(`/doctor/patient/${patient.id}`)} />)}<button className="admit-card" onClick={() => setShowAdmit(true)}><span>＋</span><b>Admit a patient</b><small>Create a local record and begin with confirmed facts.</small></button></div>
+        {!visible.length && <div className="roster-empty"><span>⌕</span><b>No matching patient</b><p>Try a different name, room, or MRN.</p></div>}
+      </section>
+    </main>
+    {showAdmit && <AdmitModal staff={staff} onClose={() => setShowAdmit(false)} onDone={(patient) => { setShowAdmit(false); load(); nav(`/doctor/patient/${patient.id}`); }} />}
+    <style>{`
+      .roster-page{min-height:100%;}.roster-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 30px;border-bottom:1px solid var(--line);background:rgba(7,19,28,.78);backdrop-filter:blur(15px);position:sticky;top:0;z-index:20}.roster-mark{font-size:22px;color:var(--teal)}.roster-nav-label{font-size:10px;letter-spacing:.13em;font-weight:800;color:var(--text-mute);border-left:1px solid var(--line);padding-left:11px}.staff-chip{padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:rgba(16,36,48,.75);font-size:12px;color:var(--text-dim)}.roster-logout{padding:7px 11px}.roster-main{width:min(1160px,100%);margin:auto;padding:46px 32px 64px}.roster-hero{display:flex;justify-content:space-between;gap:34px;align-items:end;padding:34px 36px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(115deg,rgba(28,78,90,.72),rgba(10,31,41,.78) 58%,rgba(15,48,62,.46));box-shadow:var(--shadow);position:relative;overflow:hidden}.roster-hero::after{content:"";position:absolute;width:360px;height:360px;border-radius:50%;right:-160px;top:-225px;border:1px solid rgba(100,232,210,.25);box-shadow:0 0 0 50px rgba(100,232,210,.025),0 0 0 104px rgba(100,232,210,.015)}.roster-kicker{display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.13em;font-weight:800;color:var(--teal)}.roster-kicker i{width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 5px rgba(100,232,210,.12)}.roster-hero h1{font-size:clamp(36px,5vw,54px);line-height:.98;letter-spacing:-.065em;margin:13px 0}.roster-hero h1 em{font-style:normal;color:var(--teal)}.roster-hero p{max-width:540px;color:var(--text-dim);font-size:15px;line-height:1.65}.roster-actions{position:relative;z-index:1;min-width:205px;display:flex;flex-direction:column;align-items:flex-start;gap:10px}.roster-actions span{color:var(--text-mute);font-size:11px;line-height:1.45}.census-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}.census{display:flex;align-items:center;gap:11px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:rgba(13,34,45,.7)}.census-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:var(--panel-hi);color:var(--blue);font-size:14px}.census-icon.ok{color:var(--ok)}.census-icon.teal{color:var(--teal)}.census b{display:block;font-size:18px;line-height:1}.census strong{display:block;color:var(--text-dim);font-size:11px;margin-top:4px}.census small{display:block;color:var(--text-mute);font-size:10px;margin-top:2px}.roster-list{margin-top:38px}.roster-list-head{display:flex;justify-content:space-between;align-items:end;gap:20px;margin-bottom:18px}.section-kicker{font-size:10px;letter-spacing:.13em;color:var(--teal);font-weight:800}.roster-list h2{font-size:27px;letter-spacing:-.04em;margin-top:3px}.roster-search{width:min(100%,280px);display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(5,19,28,.58);color:var(--text-mute)}.roster-search input{min-width:0;flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:13px}.patient-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:15px}.patient-card{min-height:218px;padding:20px;text-align:left;border:1px solid var(--line);border-radius:16px;background:linear-gradient(145deg,rgba(25,62,74,.84),rgba(9,27,37,.86));transition:transform .16s,border-color .16s,box-shadow .16s}.patient-card:hover{transform:translateY(-4px);border-color:var(--teal-dim);box-shadow:var(--shadow-lg)}.patient-avatar{width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--line);border-radius:13px;background:linear-gradient(145deg,var(--panel-hi),var(--bg-soft));color:var(--teal);font-weight:800}.patient-status{font-size:9px;letter-spacing:.09em;font-weight:800;border-radius:999px;padding:5px 7px;text-transform:uppercase}.patient-name{font-size:19px;letter-spacing:-.03em;font-weight:750;margin:16px 0 3px}.patient-meta{color:var(--text-mute);font-size:12px}.patient-reason{margin-top:13px;padding:8px 10px;border:1px solid var(--line-soft);border-radius:9px;background:rgba(5,19,28,.42);color:var(--text-dim);font-size:12px}.patient-open{display:flex;align-items:center;gap:6px;margin-top:14px;color:var(--teal);font-size:12px;font-weight:700}.patient-open span{font-size:17px}.admit-card{min-height:218px;padding:20px;text-align:left;border:1px dashed rgba(100,232,210,.38);border-radius:16px;background:rgba(100,232,210,.04);color:var(--text-dim);transition:background .16s,border-color .16s}.admit-card:hover{background:rgba(100,232,210,.1);border-color:var(--teal)}.admit-card span{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:rgba(100,232,210,.13);color:var(--teal);font-size:23px;margin-bottom:18px}.admit-card b,.admit-card small{display:block}.admit-card b{color:var(--text);font-size:16px}.admit-card small{margin-top:5px;font-size:12px;line-height:1.5;color:var(--text-mute)}.roster-empty{text-align:center;padding:46px;color:var(--text-mute)}.roster-empty span,.roster-empty b,.roster-empty p{display:block}.roster-empty span{font-size:25px;margin-bottom:8px}.roster-empty b{color:var(--text-dim)}.roster-empty p{font-size:13px;margin-top:3px}@media(max-width:760px){.roster-nav{padding:16px 18px}.roster-nav-label,.staff-chip{display:none}.roster-main{padding:28px 18px 48px}.roster-hero{align-items:flex-start;flex-direction:column;padding:28px}.census-strip{grid-template-columns:1fr}.roster-list-head{align-items:flex-start;flex-direction:column}.roster-search{width:100%}}
+    `}</style>
+  </div>;
 }
 
+function Census({ icon, label, value, note, tone = "" }) { return <div className="census"><div className={`census-icon ${tone}`}>{icon}</div><div><b>{value}</b><strong>{label}</strong><small>{note}</small></div></div>; }
+function PatientCard({ patient, onOpen }) { const initials = patient.name.split(" ").map((word) => word[0]).slice(0, 2).join(""); const admitted = patient.status === "admitted"; return <button className="patient-card" onClick={onOpen}><div className="row between"><div className="patient-avatar">{initials}</div><span className="patient-status" style={{ color: admitted ? "var(--ok)" : "var(--text-mute)", background: admitted ? "rgba(62,224,138,.12)" : "var(--panel-2)" }}>{patient.status}</span></div><div className="patient-name">{patient.name}</div><div className="patient-meta">{patient.age ? `${patient.age} yrs · ` : ""}Room {patient.room || "—"} · {patient.mrn || "No MRN"}</div>{patient.reason_for_visit && <div className="patient-reason">{patient.reason_for_visit}</div>}<div className="patient-open">Open living record <span>→</span></div></button>; }
+
 function AdmitModal({ staff, onClose, onDone }) {
-  const [f, setF] = useState({
-    name: "", age: "", room: "", mrn: "", reason_for_visit: "",
-    username: "", password: "confide", allergies: "", medications: "",
-    primary_language: "en",
-  });
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState("");
-  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
-
-  async function submit(e) {
-    e.preventDefault();
-    setBusy(true);
-    setErr("");
-    try {
-      const p = await api.createPatient({
-        name: f.name,
-        staff_id: staff.staff_id,
-        age: f.age ? Number(f.age) : null,
-        room: f.room || null,
-        mrn: f.mrn || null,
-        reason_for_visit: f.reason_for_visit || null,
-        primary_language: f.primary_language || "en",
-        username: f.username || null,
-        password: f.password || null,
-        known_allergies: f.allergies ? f.allergies.split(",").map((s) => s.trim()).filter(Boolean) : [],
-        current_medications: f.medications ? f.medications.split(",").map((s) => s.trim()).filter(Boolean) : [],
-      });
-      onDone(p);
-    } catch (e2) {
-      setErr(e2.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="overlay" onClick={onClose}>
-      <div className="card modal fade-up" onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ fontSize: 22, marginBottom: 4 }}>Admit patient</h2>
-        <p className="muted" style={{ marginBottom: 20, fontSize: 14 }}>
-          Facts you enter here become the first nodes of their living record — and the Guardian checks them immediately.
-        </p>
-        <form onSubmit={submit}>
-          <div className="two">
-            <label className="field"><span>Full name</span><input className="input" required value={f.name} onChange={set("name")} placeholder="María González" /></label>
-            <label className="field"><span>Age</span><input className="input" value={f.age} onChange={set("age")} placeholder="68" /></label>
-          </div>
-          <div className="two">
-            <label className="field"><span>Room</span><input className="input" value={f.room} onChange={set("room")} placeholder="4B" /></label>
-            <label className="field"><span>MRN</span><input className="input" value={f.mrn} onChange={set("mrn")} placeholder="MRN-04821" /></label>
-          </div>
-          <div className="two">
-            <label className="field"><span>Reason for visit</span><input className="input" value={f.reason_for_visit} onChange={set("reason_for_visit")} placeholder="Chest pain" /></label>
-            <label className="field"><span>Preferred language</span>
-              <select className="input" value={f.primary_language} onChange={set("primary_language")}>
-                <option value="en">English</option><option value="es">Español</option>
-                <option value="zh">中文</option><option value="fr">Français</option>
-                <option value="hi">हिन्दी</option><option value="ar">العربية</option>
-                <option value="pt">Português</option><option value="vi">Tiếng Việt</option>
-              </select>
-            </label>
-          </div>
-          <label className="field"><span>Known allergies (comma-separated)</span><input className="input" value={f.allergies} onChange={set("allergies")} placeholder="Penicillin" /></label>
-          <label className="field"><span>Current medications (comma-separated)</span><input className="input" value={f.medications} onChange={set("medications")} placeholder="Warfarin" /></label>
-          <div className="sep" />
-          <div className="muted" style={{ fontSize: 12, marginBottom: 10 }}>PATIENT LOGIN (they'll use this to talk to CareTrace)</div>
-          <div className="two">
-            <label className="field"><span>Username</span><input className="input" value={f.username} onChange={set("username")} placeholder="maria" /></label>
-            <label className="field"><span>Password</span><input className="input" value={f.password} onChange={set("password")} /></label>
-          </div>
-          {err && <div style={{ color: "var(--crit)", fontSize: 13, marginBottom: 10 }}>{err}</div>}
-          <div className="row between" style={{ marginTop: 8 }}>
-            <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
-            <button className="btn btn-primary" disabled={busy}>{busy ? <span className="spinner" /> : "Admit & open record"}</button>
-          </div>
-        </form>
-      </div>
-      <style>{`
-        .overlay { position:fixed; inset:0; background:rgba(4,7,14,0.7); backdrop-filter:blur(4px);
-          display:grid; place-items:center; z-index:50; padding:24px; }
-        .modal { width:560px; max-width:100%; padding:28px; max-height:90vh; overflow:auto; }
-        .two { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-      `}</style>
-    </div>
-  );
+  const [f, setF] = useState({ name: "", age: "", room: "", mrn: "", reason_for_visit: "", username: "", password: "confide", allergies: "", medications: "", primary_language: "en" }); const [busy, setBusy] = useState(false); const [err, setErr] = useState(""); const set = (key) => (event) => setF({ ...f, [key]: event.target.value });
+  async function submit(event) { event.preventDefault(); setBusy(true); setErr(""); try { const patient = await api.createPatient({ name: f.name, staff_id: staff.staff_id, age: f.age ? Number(f.age) : null, room: f.room || null, mrn: f.mrn || null, reason_for_visit: f.reason_for_visit || null, primary_language: f.primary_language, username: f.username || null, password: f.password || null, known_allergies: f.allergies ? f.allergies.split(",").map((value) => value.trim()).filter(Boolean) : [], current_medications: f.medications ? f.medications.split(",").map((value) => value.trim()).filter(Boolean) : [] }); onDone(patient); } catch (error) { setErr(error.message); } finally { setBusy(false); } }
+  return <div className="overlay" onClick={onClose}><div className="card modal fade-up" onClick={(event) => event.stopPropagation()}><div className="modal-kicker">NEW LOCAL RECORD</div><h2 style={{ fontSize: 23, margin: "4px 0 5px" }}>Admit patient</h2><p className="muted" style={{ marginBottom: 20, fontSize: 14 }}>These facts become the first evidence-linked nodes. Guardian checks them immediately.</p><form onSubmit={submit}><div className="two"><label className="field"><span>Full name</span><input className="input" required value={f.name} onChange={set("name")} placeholder="María González" /></label><label className="field"><span>Age</span><input className="input" value={f.age} onChange={set("age")} placeholder="68" /></label></div><div className="two"><label className="field"><span>Room</span><input className="input" value={f.room} onChange={set("room")} placeholder="4B" /></label><label className="field"><span>MRN</span><input className="input" value={f.mrn} onChange={set("mrn")} placeholder="MRN-04821" /></label></div><div className="two"><label className="field"><span>Reason for visit</span><input className="input" value={f.reason_for_visit} onChange={set("reason_for_visit")} placeholder="Chest pain" /></label><label className="field"><span>Preferred language</span><select className="input" value={f.primary_language} onChange={set("primary_language")}><option value="en">English</option><option value="es">Español</option><option value="zh">中文</option><option value="fr">Français</option><option value="hi">हिन्दी</option><option value="ar">العربية</option><option value="pt">Português</option><option value="vi">Tiếng Việt</option></select></label></div><label className="field"><span>Known allergies (comma-separated)</span><input className="input" value={f.allergies} onChange={set("allergies")} placeholder="Penicillin" /></label><label className="field"><span>Current medications (comma-separated)</span><input className="input" value={f.medications} onChange={set("medications")} placeholder="Warfarin" /></label><div className="sep" /><div className="modal-kicker" style={{ marginBottom: 10 }}>OPTIONAL PATIENT LOGIN</div><div className="two"><label className="field"><span>Username</span><input className="input" value={f.username} onChange={set("username")} placeholder="maria" /></label><label className="field"><span>Password</span><input className="input" value={f.password} onChange={set("password")} /></label></div>{err && <div style={{ color: "var(--crit)", fontSize: 13, marginBottom: 10 }}>{err}</div>}<div className="row between" style={{ marginTop: 8 }}><button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" disabled={busy}>{busy ? <span className="spinner" /> : "Admit & open record"}</button></div></form></div><style>{`.overlay{position:fixed;inset:0;background:rgba(3,12,18,.78);backdrop-filter:blur(8px);display:grid;place-items:center;z-index:50;padding:24px}.modal{width:590px;max-width:100%;padding:29px;max-height:90vh;overflow:auto}.modal-kicker{font-size:10px;letter-spacing:.13em;color:var(--teal);font-weight:800}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:560px){.two{grid-template-columns:1fr}.modal{padding:24px 20px}}`}</style></div>;
 }

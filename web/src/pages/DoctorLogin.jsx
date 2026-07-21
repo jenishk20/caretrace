@@ -35,7 +35,7 @@ export default function DoctorLogin() {
   }
 
   return (
-    <AuthShell icon="🩺" title="Healthcare practitioner sign-in" subtitle="Round, capture, and watch the Guardian work.">
+    <AuthShell icon="🩺" audience="Clinical workspace" title="Healthcare practitioner sign-in" subtitle="Round, capture, and watch the Guardian work.">
       <form onSubmit={submit}>
         {mode === "register" && (
           <label className="field">

@@ -1,6 +1,6 @@
 """Curated clinical knowledge — the code-owned source of truth.
 
-Confide's reliability rule: Gemma never decides pharmacology from memory. It only
+Confide's reliability rule: gpt-oss never decides pharmacology from memory. It only
 extracts drug/allergy/symptom mentions and tags each with a normalized CATEGORY
 from the controlled vocabulary below. Every clinical judgment — does this drug
 conflict with an allergy, does it interact with another drug, when is a lab due —
@@ -135,6 +135,29 @@ ORDER_KEYWORDS = {
     "scan": "imaging",
 }
 
+# Minimal demonstration set. A production deployment swaps this for licensed,
+# versioned ICD-10-CM and CPT data while keeping the same validation boundary.
+ICD10 = {
+    "atrial fibrillation": ("I48.91", "Atrial fibrillation, unspecified"),
+    "chest pain": ("R07.9", "Chest pain, unspecified"),
+    "penicillin allergy": ("Z88.0", "Allergy status to penicillin"),
+    "essential hypertension": ("I10", "Essential (primary) hypertension"),
+    "shortness of breath": ("R06.02", "Shortness of breath"),
+    "nausea": ("R11.0", "Nausea"),
+    "fever": ("R50.9", "Fever, unspecified"),
+    "type 2 diabetes": ("E11.9", "Type 2 diabetes mellitus without complications"),
+    "hyperlipidemia": ("E78.5", "Hyperlipidemia, unspecified"),
+    "acute kidney injury": ("N17.9", "Acute kidney failure, unspecified"),
+    "anemia": ("D64.9", "Anemia, unspecified"),
+    "anticoagulant use": ("Z79.01", "Long term use of anticoagulants"),
+}
+
+EM_LEVELS = {
+    "low": ("99231", "Subsequent hospital care, low complexity"),
+    "moderate": ("99232", "Subsequent hospital care, moderate complexity"),
+    "high": ("99233", "Subsequent hospital care, high complexity"),
+}
+
 
 def category_for_drug(name: str, fallback: str | None = None) -> str | None:
     """Normalize a drug name to a category, preferring the curated map."""
@@ -165,3 +188,28 @@ def allergy_conflict(allergy_category: str, drug_category: str) -> bool:
 
 def interaction_between(cat_a: str, cat_b: str) -> tuple[str, str] | None:
     return INTERACTIONS.get(frozenset([cat_a, cat_b]))
+
+
+def code_for_term(term: str) -> dict | None:
+    entry = ICD10.get((term or "").strip().lower())
+    if not entry:
+        return None
+    return {"code": entry[0], "system": "ICD-10", "label": entry[1]}
+
+
+def code_details(system: str, code: str) -> dict | None:
+    normalized_system = (system or "").strip().upper()
+    tables = []
+    if normalized_system in ("ICD-10", "ICD10", "ICD-10-CM"):
+        tables = [("ICD-10", ICD10)]
+    elif normalized_system == "CPT":
+        tables = [("CPT", EM_LEVELS)]
+    for canonical_system, table in tables:
+        for stored_code, label in table.values():
+            if stored_code == code:
+                return {"code": stored_code, "system": canonical_system, "label": label}
+    return None
+
+
+def validate_code(system: str, code: str) -> bool:
+    return code_details(system, code) is not None

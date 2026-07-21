@@ -123,6 +123,132 @@ def list_encounters(patient_id: int) -> list[dict]:
             "SELECT * FROM encounters WHERE patient_id=? ORDER BY created_at DESC", (patient_id,)).fetchall()]
 
 
+def get_encounter(encounter_id: int) -> dict | None:
+    with db.connect() as conn:
+        return _enc(db.row_to_dict(conn.execute(
+            "SELECT * FROM encounters WHERE id=?", (encounter_id,)
+        ).fetchone()))
+
+
+def sign_encounter_note(encounter_id: int, note: dict) -> dict | None:
+    with db.connect() as conn:
+        conn.execute(
+            """UPDATE encounters SET chief_complaint=?, summary=?, medications=?,
+               follow_ups=?, emotional_tone=? WHERE id=?""",
+            (
+                note.get("chief_complaint"), note.get("summary"),
+                json.dumps(note.get("medications") or []),
+                json.dumps(note.get("follow_ups") or []),
+                note.get("emotional_tone"), encounter_id,
+            ),
+        )
+    return get_encounter(encounter_id)
+
+
+# --- dynamic agent runs ------------------------------------------------------
+
+def _agent_run(row) -> dict | None:
+    if row is None:
+        return None
+    run = dict(row)
+    run["trace"] = json.loads(run.get("trace") or "[]")
+    run["bundle"] = json.loads(run.get("bundle") or "{}")
+    return run
+
+
+def create_agent_run(patient_id: int, encounter_id: int, input_kind: str,
+                     source_kind: str, language: str, input_text: str) -> dict:
+    ts = db.now()
+    with db.connect() as conn:
+        cur = conn.execute(
+            """INSERT INTO agent_runs
+               (patient_id, encounter_id, input_kind, source_kind, language,
+                input_text, status, trace, bundle, created_at, updated_at)
+               VALUES (?,?,?,?,?,?, 'running', '[]', '{}', ?,?)""",
+            (patient_id, encounter_id, input_kind, source_kind, language, input_text, ts, ts),
+        )
+        return _agent_run(conn.execute("SELECT * FROM agent_runs WHERE id=?", (cur.lastrowid,)).fetchone())
+
+
+def get_agent_run(encounter_id: int) -> dict | None:
+    with db.connect() as conn:
+        return _agent_run(conn.execute(
+            "SELECT * FROM agent_runs WHERE encounter_id=?", (encounter_id,)
+        ).fetchone())
+
+
+def list_agent_runs(patient_id: int, limit: int = 3) -> list[dict]:
+    with db.connect() as conn:
+        return [_agent_run(row) for row in conn.execute(
+            "SELECT * FROM agent_runs WHERE patient_id=? ORDER BY id DESC LIMIT ?",
+            (patient_id, max(1, min(limit, 50))),
+        ).fetchall()]
+
+
+def update_agent_run(encounter_id: int, *, trace: list | None = None,
+                     bundle: dict | None = None, status: str | None = None,
+                     latency_ms: int | None = None, approved: bool = False) -> dict | None:
+    fields = ["updated_at=?"]
+    values: list = [db.now()]
+    if trace is not None:
+        fields.append("trace=?")
+        values.append(json.dumps(trace, ensure_ascii=False))
+    if bundle is not None:
+        fields.append("bundle=?")
+        values.append(json.dumps(bundle, ensure_ascii=False))
+    if status is not None:
+        fields.append("status=?")
+        values.append(status)
+    if latency_ms is not None:
+        fields.append("latency_ms=?")
+        values.append(latency_ms)
+    if approved:
+        fields.append("approved_at=?")
+        values.append(db.now())
+    values.append(encounter_id)
+    with db.connect() as conn:
+        conn.execute(f"UPDATE agent_runs SET {', '.join(fields)} WHERE encounter_id=?", values)
+    return get_agent_run(encounter_id)
+
+
+# --- approved billing codes --------------------------------------------------
+
+def _billing_code(row) -> dict:
+    item = dict(row)
+    item["validated"] = bool(item["validated"])
+    return item
+
+
+def finalize_billing_codes(patient_id: int, encounter_id: int, codes: list[dict]) -> list[dict]:
+    from core import curated
+
+    with db.connect() as conn:
+        for proposed in codes:
+            details = curated.code_details(proposed.get("system", ""), proposed.get("code", ""))
+            if not details:
+                continue
+            conn.execute(
+                """INSERT OR IGNORE INTO billing_codes
+                   (patient_id, encounter_id, system, code, label, evidence, validated, created_at)
+                   VALUES (?,?,?,?,?,?,1,?)""",
+                (
+                    patient_id, encounter_id, details["system"], details["code"],
+                    details["label"], str(proposed.get("evidence") or ""), db.now(),
+                ),
+            )
+        rows = conn.execute(
+            "SELECT * FROM billing_codes WHERE encounter_id=? ORDER BY id", (encounter_id,)
+        ).fetchall()
+    return [_billing_code(row) for row in rows]
+
+
+def list_billing_codes(patient_id: int) -> list[dict]:
+    with db.connect() as conn:
+        return [_billing_code(row) for row in conn.execute(
+            "SELECT * FROM billing_codes WHERE patient_id=? ORDER BY id DESC", (patient_id,)
+        ).fetchall()]
+
+
 # --- documents (consent / discharge) -----------------------------------------
 
 def create_document(patient_id, staff_id, kind, image_path=None, ocr_text=None,

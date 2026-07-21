@@ -82,6 +82,18 @@ export const api = {
     return req("/api/voice/transcribe", { method: "POST", form });
   },
 
+  // dynamic workflow agent
+  runAgent: (data) => req("/api/agent/run", { method: "POST", body: data }),
+  uploadAgentImage: (file) => {
+    const form = new FormData();
+    form.append("image", file, file.name || "capture.png");
+    return req("/api/agent/upload", { method: "POST", form });
+  },
+  approveAgent: (data) => req("/api/agent/approve", { method: "POST", body: data }),
+  agentTrace: (encounterId) => req(`/api/agent/runs/${encounterId}/trace`),
+  agentRuns: (patientId, limit = 3) => req(`/api/patients/${patientId}/agent-runs?limit=${limit}`),
+  patientRoi: (patientId) => req(`/api/patients/${patientId}/roi`),
+
   // consent
   consentText: (data) => req("/api/consent/forms/text", { method: "POST", body: data }),
   consentImage: (patientId, staffId, file) => {

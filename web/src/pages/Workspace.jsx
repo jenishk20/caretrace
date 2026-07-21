@@ -11,13 +11,17 @@ import VisitsView from "../views/VisitsView.jsx";
 import ConsentView from "../views/ConsentView.jsx";
 import DischargeView from "../views/DischargeView.jsx";
 import HandoffView from "../views/HandoffView.jsx";
+import PrescriptionStep from "../views/PrescriptionStep.jsx";
+import RoiView from "../views/RoiView.jsx";
 
 const NAV = [
   { key: "visit", label: "Guided visit", icon: "🧭", hint: "Onboard → discharge" },
   { key: "dashboard", label: "Dashboard", icon: "🗂", hint: "Everything, one place" },
+  { key: "roi", label: "ROI & proof", icon: "↗", hint: "Time, coding, safety" },
   { key: "overview", label: "Overview", icon: "◈", hint: "Graph & Guardian" },
   { key: "scribe", label: "Scribe", icon: "🎧", hint: "Capture a round" },
   { key: "consent", label: "Consent", icon: "📋", hint: "Explain a form" },
+  { key: "prescription", label: "Prescription", icon: "℞", hint: "Scan a medicine" },
   { key: "discharge", label: "Discharge", icon: "🏠", hint: "Going-home plan" },
   { key: "handoff", label: "Handoff", icon: "🔀", hint: "SBAR & catch-up" },
 ];
@@ -95,9 +99,11 @@ export default function Workspace() {
         </header>
         {tab === "visit" && <VisitFlow {...shared} />}
         {tab === "dashboard" && <VisitsView {...shared} />}
+        {tab === "roi" && <RoiView {...shared} />}
         {tab === "overview" && <Overview {...shared} />}
         {tab === "scribe" && <ScribeView {...shared} />}
         {tab === "consent" && <ConsentView {...shared} />}
+        {tab === "prescription" && <PrescriptionStep {...shared} />}
         {tab === "discharge" && <DischargeView {...shared} />}
         {tab === "handoff" && <HandoffView {...shared} />}
       </main>

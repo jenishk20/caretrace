@@ -71,14 +71,6 @@ def model_logs(limit: int = 20):
         "session": session_stats(),
         "resident": model_status(),
     }
-
-
-@app.get("/api/model/logs")
-def model_logs(limit: int = 20):
-    """Neutral alias retained alongside the legacy demo endpoint."""
-    return gemma_logs(limit)
-
-
 # --- auth --------------------------------------------------------------------
 
 class StaffLogin(BaseModel):

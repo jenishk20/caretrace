@@ -4,6 +4,15 @@ MedSignal is a local-first clinical intelligence assistant for hospital teams. I
 
 All demo records are synthetic. MedSignal is clinical decision support, not a diagnosis, prescription, or autonomous medication-safety system.
 
+## Built with Codex and GPT-5.6
+
+- **Agentic workflows:** Codex and GPT-5.6 accelerated the design and implementation of the bounded local agent that turns speech, images, and text into reviewable, source-linked drafts.
+- **Local runtime model:** MedSignal runs `gpt-oss:20b` through Ollama on the local machine, alongside local transcription, Tesseract OCR, and SQLite storage—so patient context stays in the care environment.
+- **Safety by design:** We used Codex to help implement and test the boundary between model-generated language and deterministic Guardian rules for medication risks, contradictions, and incomplete follow-ups.
+- **Clinician control and evaluation:** Codex and GPT-5.6 accelerated the React/FastAPI workflow, approval boundaries, debugging, and the repeatable evaluation harness that checks routes, safety signals, grounded outputs, and validated billing drafts.
+
+GPT-5.6 and Codex were used during development. They are not part of the runtime patient-care workflow: at runtime, MedSignal uses the local `gpt-oss:20b` model, deterministic code, and clinician review.
+
 ## Local clinical workflow agent
 
 One clinician input creates a reviewable draft bundle without sending data to a cloud service:
@@ -68,7 +77,3 @@ npm --prefix web run build
 ```
 
 The agent evaluation verifies all required tools run for each workflow, the synthetic prescription scenario produces the expected critical deterministic alert, and billing suggestions contain only curated, validated codes.
-
-## Development collaboration
-
-Codex and GPT-5.6 accelerated the design, implementation, testing, review, and documentation of this local workflow. The product preserves the same boundary it enforces in code: the model proposes; deterministic rules and clinicians decide.

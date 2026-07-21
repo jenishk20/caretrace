@@ -17,11 +17,23 @@ GPT-5.6 and Codex were used during development. They are not part of the runtime
 
 One clinician input becomes a complete, local, clinician-reviewed workflow—without sending patient context to the cloud.
 
-```text
-speech ── faster-whisper ─┐
-image  ── Tesseract OCR ──┼─> GPT-OSS agent ─> MedSignal graph + Guardian ─> clinician approval
-text   ───────────────────┘
+### Architecture diagram
+
+![MedSignal local architecture](docs/demo-assets/medsignal-architecture.png)
+
+A detailed component and request-lifecycle reference is available in [docs/architecture.md](docs/architecture.md).
+
+```mermaid
+flowchart LR
+    Speech["Speech<br/>faster-whisper"] --> Agent["Local GPT-OSS agent"]
+    Image["Prescription image<br/>Tesseract OCR"] --> Agent
+    Text["Typed note<br/>or correction"] --> Agent
+    Agent --> Graph["Evidence-linked<br/>patient graph"]
+    Graph --> Guardian["Guardian<br/>deterministic checks"]
+    Guardian --> Review["Clinician review<br/>approve selected drafts"]
 ```
+
+**Everything runs locally. Only clinician-approved work is committed to the record.**
 
 1. **Capture locally.** A clinician speaks, types, or photographs a prescription. Faster-whisper and Tesseract convert speech and images to text on-device.
 2. **Organize the encounter.** The local GPT-OSS agent extracts source-linked facts, updates the patient graph, and prepares a reviewable bundle: clinical note, safety checks, billing candidates, SBAR handoff, and patient explanation.

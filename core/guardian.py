@@ -115,6 +115,38 @@ def check_medication(patient_id: int, med_node: dict, encounter_id: int | None =
     return alerts
 
 
+def assess_medication(patient_id: int, drug_label: str, drug_category: str | None = None) -> dict:
+    """Read-only deterministic preview against active allergies and medications."""
+    from core.curated import category_for_drug
+
+    category = category_for_drug(drug_label, fallback=drug_category)
+    conflicts = []
+    if category:
+        for node in graph.nodes_for(patient_id, active_only=True):
+            other_category = node.get("category")
+            if not other_category:
+                continue
+            if node["ntype"] == "allergy" and allergy_conflict(other_category, category):
+                conflicts.append({
+                    "kind": "allergy", "severity": "critical", "with": node["label"],
+                    "node_id": node["id"], "rule": f"{other_category} conflicts with {category}",
+                })
+            elif node["ntype"] == "medication":
+                interaction = interaction_between(category, other_category)
+                if interaction:
+                    severity, why = interaction
+                    conflicts.append({
+                        "kind": "interaction", "severity": severity, "with": node["label"],
+                        "node_id": node["id"], "rule": why,
+                    })
+    return {
+        "drug": drug_label,
+        "category": category,
+        "safe": not conflicts,
+        "conflicts": conflicts,
+    }
+
+
 # --- 2. contradiction --------------------------------------------------------
 
 def check_contradiction(patient_id: int, stmt_node: dict, encounter_id: int | None = None) -> list[dict]:

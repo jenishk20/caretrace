@@ -2,7 +2,7 @@
 
 **MedSignal is a local-first clinical intelligence assistant for hospital teams.** It turns clinician-confirmed encounter facts into an evidence-linked patient timeline, runs deterministic safety checks, and prepares clinician-approved drafts for documentation, handoff, billing review, and patient debriefs.
 
-> **Important:** Every record in this repository is synthetic. MedSignal is clinical decision support—not a diagnosis, prescription, or autonomous medication-safety system.
+> **Important:** Every record in this repository is synthetic. MedSignal is clinical decision support, not a diagnosis, prescription, or autonomous medication-safety system.
 
 ## Why MedSignal
 
@@ -14,12 +14,12 @@ It is designed for environments where privacy and clinical control matter: runti
 
 We used GPT-5.6 in Codex as a **specification-driven development (SDD)** collaborator: turning product ideas into explicit workflows, building them, and validating the result.
 
-- **From specs to product decisions:** Codex helped translate the bedside flow—capture → evidence → safety checks → clinician approval—into acceptance criteria and screen/API behavior. We chose a local-first design, source-linked facts, and clinician-controlled approvals as non-negotiable product boundaries.
+- **From specs to product decisions:** Codex helped translate the bedside flow of capture → evidence → safety checks → clinician approval into acceptance criteria and screen/API behavior. We chose a local-first design, source-linked facts, and clinician-controlled approvals as non-negotiable product boundaries.
 - **Engineering the workflow:** Codex accelerated the React and FastAPI implementation, local agent tool orchestration, SQLite-backed patient graph, OCR/transcription integration, and reviewable draft bundles.
 - **Safety and quality:** Codex helped implement deterministic Guardian rules, audit-linked corrections, and repeatable tests for medication risks, contradictions, routing, and billing-code validation. We deliberately kept safety decisions in deterministic code rather than the model.
-- **Design and iteration:** Codex supported UI refinement, debugging, and documentation—including the local architecture and judge walkthrough—so the technical design remained understandable and testable.
+- **Design and iteration:** Codex supported UI refinement, debugging, and documentation, including the local architecture and judge walkthrough, so the technical design remained understandable and testable.
 
-The team made the final product, engineering, and design decisions. GPT-5.6 and Codex were used during development only—not in the runtime patient-care workflow. At runtime, MedSignal uses local `gpt-oss:20b`, deterministic code, and clinician review.
+The team made the final product, engineering, and design decisions. GPT-5.6 and Codex were used during development only, not in the runtime patient-care workflow. At runtime, MedSignal uses local `gpt-oss:20b`, deterministic code, and clinician review.
 
 ## Local clinical workflow agent
 
@@ -65,13 +65,13 @@ MedSignal keeps an evidence-linked local graph of each patient's recorded facts,
 
 ## Key modules
 
-- [`core/agent.py`](core/agent.py) — bounded tool orchestration, draft bundles, approval commits, and trace persistence.
-- [`core/guardian.py`](core/guardian.py) — deterministic allergy, interaction, contradiction, and overdue-order checks.
-- [`core/curated.py`](core/curated.py) — auditable clinical and coding lookup tables.
-- [`core/vision.py`](core/vision.py) — local image validation and Tesseract OCR; `gpt-oss` receives extracted text, not images.
-- [`features/agent.py`](features/agent.py) — run, upload, review, trace, and recent-run APIs.
-- [`web/src/views/AgentRunView.jsx`](web/src/views/AgentRunView.jsx) — unified clinician capture and approval workflow.
-- [`eval/agent_eval.py`](eval/agent_eval.py) — repeatable route, cross-modal safety, and coding validation checks.
+- [`core/agent.py`](core/agent.py): bounded tool orchestration, draft bundles, approval commits, and trace persistence.
+- [`core/guardian.py`](core/guardian.py): deterministic allergy, interaction, contradiction, and overdue-order checks.
+- [`core/curated.py`](core/curated.py): auditable clinical and coding lookup tables.
+- [`core/vision.py`](core/vision.py): local image validation and Tesseract OCR; `gpt-oss` receives extracted text, not images.
+- [`features/agent.py`](features/agent.py): run, upload, review, trace, and recent-run APIs.
+- [`web/src/views/AgentRunView.jsx`](web/src/views/AgentRunView.jsx): unified clinician capture and approval workflow.
+- [`eval/agent_eval.py`](eval/agent_eval.py): repeatable route, cross-modal safety, and coding validation checks.
 
 ## Run MedSignal locally
 

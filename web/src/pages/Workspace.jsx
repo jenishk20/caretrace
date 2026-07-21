@@ -17,7 +17,6 @@ const NAV = [
   { key: "visit", label: "Guided visit", icon: "🧭", hint: "Onboard → discharge" },
   { key: "dashboard", label: "Dashboard", icon: "🗂", hint: "Everything, one place" },
   { key: "overview", label: "Overview", icon: "◈", hint: "Graph & Guardian" },
-  { key: "scribe", label: "Scribe", icon: "🎧", hint: "Capture a round" },
   { key: "consent", label: "Consent", icon: "📋", hint: "Explain a form" },
   { key: "prescription", label: "Prescription", icon: "℞", hint: "Scan a medicine" },
   { key: "discharge", label: "Discharge", icon: "🏠", hint: "Going-home plan" },

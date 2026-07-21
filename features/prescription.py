@@ -43,7 +43,7 @@ def _build(patient_id: int, staff_id: int | None, ocr_text: str) -> dict:
     )
 
     # Route the medications into the graph so the Guardian checks them (allergy / interaction),
-    # exactly like a medication spoken during a round. Extraction is the same Gemma layer; the
+    # exactly like a medication spoken during a round. Extraction is the same GPT-OSS layer; the
     # judgment stays in curated code.
     facts = graph.extract_facts(ocr_text)
     med_facts = [f for f in facts if f["ntype"] == "medication"]

@@ -303,7 +303,7 @@ _DOC_EVENT = {
 
 
 def _visit_narrative(facts: str, red_flags: list[dict], lang: str) -> dict:
-    """One grounded Gemma call per visit: a short plain summary + the red-flag warnings,
+    """One grounded GPT-OSS call per visit: a short plain summary + the red-flag warnings,
     all written in the patient's language."""
     rf_in = "; ".join(f"{r.get('symptom','')}: {r.get('description','')}" for r in red_flags) or "none"
     data = ask_json(

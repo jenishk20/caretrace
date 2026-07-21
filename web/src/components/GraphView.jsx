@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 // A deterministic constellation rather than a live force simulation: fact positions
 // remain stable as a responsive layout changes, so every node and Guardian edge stays
@@ -29,8 +30,8 @@ export default function GraphView({ snapshot, height = 460, onSelect }) {
     const element = wrapRef.current;
     if (!element) return undefined;
     const measure = () => {
-      const w = expanded ? Math.min(1180, Math.round(window.innerWidth * 0.9)) : element.clientWidth;
-      const h = expanded ? Math.round(window.innerHeight * 0.78) : height;
+      const w = expanded ? Math.min(1180, window.innerWidth - 48) : element.clientWidth;
+      const h = expanded ? Math.min(820, Math.round(window.innerHeight * 0.78)) : height;
       if (w > 0) setSize({ w, h });
     };
     const observer = new ResizeObserver(measure);
@@ -84,11 +85,10 @@ export default function GraphView({ snapshot, height = 460, onSelect }) {
     onSelect?.(node.node);
   };
 
-  return (
-    <div className={expanded ? "gv-overlay" : "gv-shell"} onClick={expanded ? () => setExpanded(false) : undefined}>
-      <div ref={wrapRef} className="gv-stage" onClick={expanded ? (event) => event.stopPropagation() : undefined}>
-        <button className="gv-expand" onClick={() => setExpanded((current) => !current)}>{expanded ? "✕ Close graph" : "⤢ Expand graph"}</button>
-        <svg viewBox={`0 0 ${size.w} ${size.h}`} width={size.w} height={size.h} role="img" aria-label="Evidence-linked patient fact graph">
+  const stage = (
+    <div ref={wrapRef} className="gv-stage" onClick={expanded ? (event) => event.stopPropagation() : undefined}>
+      <button className="gv-expand" onClick={() => setExpanded((current) => !current)}>{expanded ? "✕ Close graph" : "⤢ Expand graph"}</button>
+      <svg viewBox={`0 0 ${size.w} ${size.h}`} width={size.w} height={size.h} role="img" aria-label="Evidence-linked patient fact graph">
           <defs>
             <radialGradient id="patientHalo"><stop stopColor="#64e8d2" stopOpacity=".28" /><stop offset="1" stopColor="#64e8d2" stopOpacity="0" /></radialGradient>
             <filter id="nodeShadow" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="6" stdDeviation="6" floodColor="#000" floodOpacity=".38" /></filter>
@@ -119,7 +119,17 @@ export default function GraphView({ snapshot, height = 460, onSelect }) {
             </g>;
           })}
           {graph.nodes.length === 1 && <text x={size.w / 2} y={size.h - 30} textAnchor="middle" fill="#91a7b9" fontSize="13">Confirmed facts will appear here after a clinician review.</text>}
-        </svg>
+      </svg>
+    </div>
+  );
+
+  return (
+    <>
+      <div className="gv-shell">
+        {expanded ? createPortal(
+          <div className="gv-overlay" role="dialog" aria-modal="true" aria-label="Expanded patient graph" onClick={() => setExpanded(false)}>{stage}</div>,
+          document.body,
+        ) : stage}
       </div>
       <style>{`
         .gv-shell { position:relative; min-height:140px; }
@@ -130,13 +140,13 @@ export default function GraphView({ snapshot, height = 460, onSelect }) {
         .gv-label { pointer-events:none; paint-order:stroke; stroke:#081721; stroke-width:3px; stroke-linejoin:round; }
         .gv-expand { position:absolute; top:10px; right:10px; z-index:3; padding:7px 10px; border-radius:9px; background:rgba(7,25,35,.88); border:1px solid var(--line); color:var(--text-dim); font-size:12px; }
         .gv-expand:hover { border-color:var(--teal-dim); color:var(--text); }
-        .gv-overlay { position:fixed; inset:0; z-index:90; padding:24px; display:grid; place-items:center; background:rgba(3,12,18,.88); backdrop-filter:blur(12px); }
-        .gv-overlay .gv-stage { width:min(1180px,90vw); max-width:90vw; box-shadow:var(--shadow-lg); border:1px solid var(--line); }
+        .gv-overlay { position:fixed; inset:0; z-index:90; padding:24px; display:grid; place-items:center; overflow:auto; background:rgba(3,12,18,.88); backdrop-filter:blur(12px); }
+        .gv-overlay .gv-stage { width:min(1180px,calc(100vw - 48px)); height:min(78vh,820px); max-width:100%; box-shadow:var(--shadow-lg); border:1px solid var(--line); }
         .gv-conflict { animation:gvDash 1s linear infinite; }
         .gv-alert-ring { animation:gvPulse 1.4s ease-out infinite; }
         @keyframes gvDash { to { stroke-dashoffset:-22; } }
         @keyframes gvPulse { 0% { opacity:1; transform:scale(.86); } 100% { opacity:0; transform:scale(1.3); } }
       `}</style>
-    </div>
+    </>
   );
 }

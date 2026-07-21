@@ -4,10 +4,13 @@ from __future__ import annotations
 import shutil
 import subprocess
 import tempfile
+import uuid
 from io import BytesIO
 from pathlib import Path
 
 from PIL import Image, ImageFilter, ImageOps, UnidentifiedImageError
+
+from core.config import IMAGES_DIR
 
 
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
@@ -31,6 +34,18 @@ def _validated_image(data: bytes) -> Image.Image:
             return ImageOps.exif_transpose(image).copy()
     except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as error:
         raise ValueError("Upload a valid PNG, JPEG, or WebP image") from error
+
+
+def save_image(data: bytes) -> str:
+    """Validate an upload before persisting a normalized local copy.
+
+    Agent runs later pass this image through ``ocr_bytes``. Saving only a verified
+    PNG keeps the media directory from becoming a store of arbitrary client files.
+    """
+    image = _validated_image(data)
+    path = IMAGES_DIR / f"{uuid.uuid4().hex}.png"
+    image.save(path, format="PNG")
+    return str(path)
 
 
 def _deskew(image: Image.Image) -> Image.Image:

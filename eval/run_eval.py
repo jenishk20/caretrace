@@ -58,8 +58,8 @@ def _force_greedy():
     from core import llm
     orig = llm.ask
 
-    def greedy(prompt, system=None, temperature=0.2, max_tokens=1024, fmt=None):
-        return orig(prompt, system=system, temperature=0.0, max_tokens=max_tokens, fmt=fmt)
+    def greedy(prompt, system=None, temperature=0.2, max_tokens=1024, fmt=None, **kwargs):
+        return orig(prompt, system=system, temperature=0.0, max_tokens=max_tokens, fmt=fmt, **kwargs)
 
     llm.ask = greedy
     return lambda: setattr(llm, "ask", orig)
@@ -74,6 +74,8 @@ def run(only: list[str] | None, use_model: bool) -> dict:
 
     features = only or list(FEATURES.keys())
     for feat in features:
+        if feat in {"agent", "coding"}:
+            continue
         if feat not in FEATURES:
             print(f"  ! unknown feature '{feat}', skipping")
             continue
@@ -112,6 +114,18 @@ def run(only: list[str] | None, use_model: bool) -> dict:
             block["confusion"] = {"tp": tp, "fp": fp, "fn": fn}
         summary[feat] = block
         latency[feat] = _percentiles(lat)
+
+    if only is None or any(feature in {"agent", "coding"} for feature in only):
+        from eval import agent_eval
+
+        agent_report = agent_eval.run()
+        for feature in ("agent", "coding"):
+            results = agent_report[feature]
+            summary[feature] = {
+                "passed": sum(item["passed"] for item in results),
+                "total": len(results),
+            }
+            cases_out.extend({"feature": feature, **item} for item in results)
 
     restore()
     bugs_path = DATASETS / "bugs.yaml"

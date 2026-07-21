@@ -1,12 +1,12 @@
 # Confide — a second clinician in the room that never forgets
 
-*On-device, on Gemma 4, works with the network off.*
+*On-device, on GPT-OSS 20B, works with the network off.*
 
 ## Problem
 
 The first ten minutes of any hospital visit are the most confusing, and for a scared, non-English-speaking patient they're frightening. Meanwhile clinicians make mistakes when they're tired and busy — a drug given against a known allergy, a contradiction nobody catches, a lab ordered and forgotten. Both failures share one root cause: nobody can hold the whole patient in their head. And in healthcare, the data is the most sensitive there is, so any solution that ships that data to a cloud API defeats its own purpose.
 
-Confide is a single always-on presence, tied to a patient for their stay, that **Hears** every conversation, **Remembers** everything in one living patient model, and **Watches over** the care, catching the mistakes people make. Everything runs on-device on Gemma 4, works with the network off, and never leaves the machine.
+Confide is a single always-on presence, tied to a patient for their stay, that **Hears** every conversation, **Remembers** everything in one living patient model, and **Watches over** the care, catching the mistakes people make. Everything runs on-device on GPT-OSS 20B, works with the network off, and never leaves the machine.
 
 ---
 
@@ -16,10 +16,10 @@ Confide is a single always-on presence, tied to a patient for their stay, that *
 
 | Feature | Subtitle | Description |
 |---|---|---|
-| **Clinical Scribe** | Speech → structured note | Dictate a round; Gemma turns it into a note and grows the record in one pass. |
+| **Clinical Scribe** | Speech → structured note | Dictate a round; GPT-OSS turns it into a note and grows the record in one pass. |
 | **Consent Explainer** | Sign it because you understood it | Reads the consent form, explains it in plain language, logs the patient's questions. |
 | **Live Translation** | Care in the patient's language | Everything the patient sees and hears renders in their chosen language, on-device. |
-| **Vision OCR** | Read any form or label | Photograph a consent sheet, discharge paper, or pill bottle; Gemma reads it. |
+| **Vision OCR** | Read any form or label | Photograph a consent sheet, discharge paper, or pill bottle; Tesseract reads it locally and GPT-OSS structures the result. |
 
 ### 🧠 Remember — one living patient model
 
@@ -53,9 +53,9 @@ Confide is a single always-on presence, tied to a patient for their stay, that *
 
 | Feature | Subtitle | Description |
 |---|---|---|
-| **On-Device Gemma 4** | Nothing leaves the machine | All inference and storage are local; works with the network off. |
+| **On-Device GPT-OSS 20B** | Nothing leaves the machine | All inference and storage are local; works with the network off. |
 | **Guided Visit** | Onboard to discharge | A step-by-step workflow that walks the clinician through the whole encounter. |
-| **Live Inference Console** | Proof it's local | Shows every on-device Gemma call — prompt, output, latency — as it happens. |
+| **Live Inference Console** | Proof it's local | Shows every on-device GPT-OSS call — prompt, output, latency — as it happens. |
 | **Evaluation Suite** | Measured, not claimed | Three-tier tests (deterministic · golden · LLM-judge) with a results dashboard. |
 
 ---
@@ -77,13 +77,13 @@ Replaces a 10-minute interpreter wait, an unread consent form, and a clinician's
 ## 2 · Inputs & Data
 
 **Inputs**
-Speech (Whisper), typed text, photos of forms/pill bottles (Gemma vision). Answers are grounded **only** in the patient's own recorded facts.
+Speech (Whisper), typed text, and photos of forms or pill bottles (local Tesseract OCR). Answers are grounded **only** in the patient's own recorded facts.
 
 **Provenance**
-`input → Gemma extracts structured facts → facts persist as graph nodes tagged by source → Guardian reasons → UI renders`
+`input → Tesseract OCR when needed → GPT-OSS extracts structured facts → facts persist as graph nodes tagged by source → Guardian reasons → UI renders`
 
 **Privacy (audited)**
-All inference and all storage are local — Gemma via local Ollama, Whisper, Piper, SQLite. No cloud, no external DB, no API keys. Patient data is git-ignored and never transmitted. **Air-gappable.**
+All inference and all storage are local — GPT-OSS via local Ollama, Tesseract, Whisper, Piper, and SQLite. No cloud, no external DB, no API keys. Patient data is git-ignored and never transmitted. **Air-gappable.**
 
 **Failure handling**
 Grammar-constrained JSON with retries, a deterministic lexicon fallback, TTS falls back to browser speech, and the med-checker refuses gracefully rather than guessing.
@@ -102,16 +102,16 @@ Every spoken action has a typed fallback. Alerts are ack/dismiss. The med scanne
 ## 4 · Underlying Model
 
 **Choice**
-Gemma 4, local via Ollama — multilingual language *and* vision, under a hard privacy constraint. Used for structured extraction, vision OCR, grounded Q&A, translation, streaming, and phrasing.
+GPT-OSS 20B, local via Ollama, is the language layer under a hard privacy constraint. It handles structured extraction, grounded Q&A, translation, streaming, and phrasing; Tesseract handles local OCR.
 
 **Central, not decorative**
-Remove Gemma and there's no product — it builds the structured memory everything else runs on.
+Remove GPT-OSS and there's no product — it builds the structured memory everything else runs on.
 
 **Coherent architecture**
-Gemma extracts and phrases; every clinical judgment (allergy, interaction, contradiction, recheck timing) is deterministic, curated code — so the system *verifies* rather than hallucinates.
+GPT-OSS extracts and phrases; every clinical judgment (allergy, interaction, contradiction, recheck timing) is deterministic, curated code — so the system *verifies* rather than hallucinates.
 
 **On-device verification**
-Core inference is local Gemma 4 (`localhost:11434`), proven by a network-off toggle and a live inference console — benchmarked across size × precision (12B and 8B, at 16/8/4-bit) with real token and latency numbers.
+Core inference is local GPT-OSS 20B (`localhost:11434`), proven by a network-off toggle and a live inference console. Performance is measured on the deployment hardware during local evaluation.
 
 ## 5 · Evidence & Evaluation
 
@@ -126,20 +126,12 @@ Three-tier eval:
 
 **27 golden cases + 14 unit tests, all green** — with results rendered on a live, offline evaluation dashboard.
 
-**Gemma evaluation, measured on-device**
-- **Token usage** — 1,050 input / 1,350 output tokens (2,400 total) across the eval run, at **16.6 tokens/sec** on-device.
-- **Precision benchmark** — Gemma 4 measured across quantization levels, real latency and throughput, no cloud involved:
-
-  | Precision | Quant | Latency (p50) | Tokens/sec | Output tokens |
-  |---|---|---|---|---|
-  | 16-bit | BF16 | 25,366ms | 18.4 | 1,920 |
-  | 8-bit | Q8_0 | 17,791ms | 28.0 | 1,609 |
-  | 4-bit | BF16 | 7,760ms | 16.6 | 1,350 |
-
-  Lower precision trades some output length for roughly **3× lower latency** — a real deployment can pick the point on that curve that fits the hospital's hardware.
+**GPT-OSS evaluation, measured locally**
+- The evaluation suite records token use and latency from the configured on-device model.
+- Results are hardware-specific and should be regenerated for each deployment.
 
 **Honest limits**
-Assistive prototype, not a medical device. Curated drug subset, not a full formulary. CPU latency. LLM-judge grades Gemma (self-bias — hardening planned).
+Assistive prototype, not a medical device. Curated drug subset, not a full formulary. CPU latency. LLM-judge grades GPT-OSS (self-bias — hardening planned).
 
 **Verifies itself**
 The Guardian fires unprompted and logs auditable alerts; the self-check surfaces un-done orders; the evaluation suite caught a real product safety bug (discharge deflecting instead of refusing), which was fixed.
@@ -152,7 +144,7 @@ The Guardian fires unprompted and logs auditable alerts; the self-check surfaces
   Voice · Vision · Text
           │
           ▼
-   GEMMA 4 (via Ollama)      →  language layer: extract facts + phrase (never decides)
+   GPT-OSS 20B (via Ollama)      →  language layer: extract facts + phrase (never decides)
           │
           ▼
    LIVING PATIENT GRAPH      →  one record for the whole stay (SQLite)
@@ -161,12 +153,12 @@ The Guardian fires unprompted and logs auditable alerts; the self-check surfaces
    THE GUARDIAN              →  decision layer: deterministic rules on curated drug data
           │
           ▼
-   Calm, Gemma-phrased alert to the clinician
+   Calm, GPT-OSS-phrased alert to the clinician
 
   ── all on-device · works with the network off ──
 ```
 
-**Stack:** Gemma 4 (Ollama, multimodal, JSON mode) · faster-whisper STT · Piper TTS · SQLite · curated clinical tables (→ RxNorm/DrugBank in production) · FastAPI + React.
+**Stack:** GPT-OSS 20B (Ollama, JSON mode) · Tesseract OCR · faster-whisper STT · Piper TTS · SQLite · curated clinical tables (→ RxNorm/DrugBank in production) · FastAPI + React.
 
 ---
 

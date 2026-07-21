@@ -50,3 +50,17 @@ class VisionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_save_image_validates_and_normalizes_upload(monkeypatch, tmp_path):
+    monkeypatch.setattr(vision, "IMAGES_DIR", tmp_path)
+
+    path = vision.save_image(_image_bytes())
+
+    with Image.open(path) as saved:
+        assert saved.format == "PNG"
+
+
+def test_save_image_rejects_non_images():
+    with unittest.TestCase().assertRaisesRegex(ValueError, "valid PNG, JPEG, or WebP"):
+        vision.save_image(b"not an image")

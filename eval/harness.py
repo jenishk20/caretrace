@@ -45,6 +45,21 @@ def seed_patient(name: str = "Test Patient", **kw) -> dict:
                                reason_for_visit=kw.pop("reason_for_visit", "evaluation"), **kw)
 
 
+def seeded_maria() -> dict:
+    """Create the synthetic cross-modal agent evaluation patient."""
+    staff = repo.create_staff("doctor", "confide", "Dr. Eval")
+    patient = repo.create_patient(
+        "María Alvarez", staff["id"], age=68, room="4B",
+        primary_language="es", reason_for_visit="Chest pain",
+    )
+    graph.add_node(patient["id"], "allergy", "Penicillin allergy",
+                   category="penicillin_class", source_kind="admission")
+    graph.add_node(patient["id"], "medication", "Warfarin",
+                   category="anticoagulant", source_kind="admission")
+    graph.add_node(patient["id"], "condition", "Atrial fibrillation", source_kind="admission")
+    return patient
+
+
 def timed(fn: Callable, *a, **kw) -> tuple[Any, float]:
     """Return (result, latency_ms)."""
     t0 = time.time()
@@ -239,7 +254,7 @@ def run_orientation_case(case: dict, use_judge: bool = True) -> dict:
     with temp_db():
         p = seed_patient(reason_for_visit=case.get("reason_for_visit", "post-surgery recovery"))
         _seed_nodes(p["id"], case.get("seed_nodes", []))
-        # TTS is out of scope for this eval (we grade Gemma's TEXT, not Piper audio).
+        # TTS is out of scope for this eval (we grade GPT-OSS's TEXT, not Piper audio).
         _orig_speak = voice.speak
         voice.speak = lambda *a, **k: "eval://tts-stubbed"
         try:

@@ -18,6 +18,8 @@ OLLAMA_HOST = os.environ.get("CARETRACE_OLLAMA_HOST", "http://127.0.0.1:11434")
 if urlparse(OLLAMA_HOST).hostname not in {"localhost", "127.0.0.1", "::1"}:
     raise RuntimeError("CARETRACE_OLLAMA_HOST must be a loopback endpoint in local-only mode.")
 OLLAMA_MODEL = os.environ.get("CARETRACE_LOCAL_MODEL", "gpt-oss:20b")
+REASONING_EFFORT_HIGH = "high"
+REASONING_EFFORT_LOW = "low"
 LLM_TIMEOUT = 120  # seconds — local models can occasionally stall
 
 # --- faster-whisper (STT) ----------------------------------------------------
@@ -30,7 +32,7 @@ PIPER_VOICE = MODELS_DIR / "en_US-lessac-medium.onnx"
 PIPER_CONFIG = MODELS_DIR / "en_US-lessac-medium.onnx.json"
 
 # --- Guardian phrasing -------------------------------------------------------
-# The Guardian's alert sentences can be phrased by Gemma (nicer, but adds ~30s of
+# The Guardian's alert sentences can be phrased by the local model (nicer, but adds ~30s of
 # latency per alert on CPU) or by fast built-in templates (instant, still natural).
 # Instant templates keep the "caught it live" beat snappy on stage.
 GUARDIAN_LLM_PHRASING = False

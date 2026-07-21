@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from core import db, graph, guardian, repo, voice
 from core.config import MEDIA_DIR, OLLAMA_HOST, OLLAMA_MODEL, ROOT
-from features import consent, discharge, handoff, memory, orientation, patient, prescription, scribe
+from features import agent, consent, discharge, handoff, memory, orientation, patient, prescription, scribe
 
 WEB_DIST = ROOT / "web" / "dist"
 
@@ -35,11 +35,12 @@ def _startup():
 # --- status ------------------------------------------------------------------
 
 def _network_reachable(timeout: float = 0.4) -> bool:
-    try:
-        socket.create_connection(("8.8.8.8", 53), timeout=timeout).close()
-        return True
-    except OSError:
-        return False
+    """Confide deliberately disables external runtime networking.
+
+    This reports the application's network mode without probing an external host.
+    Physical interface state is outside the app's trust boundary.
+    """
+    return False
 
 
 def _ollama_reachable() -> bool:
@@ -55,6 +56,7 @@ def _ollama_reachable() -> bool:
 def status():
     return {
         "network_reachable": _network_reachable(),
+        "network_mode": "disabled",
         "ollama_reachable": _ollama_reachable(),
         "model": OLLAMA_MODEL,
     }
@@ -71,8 +73,6 @@ def model_logs(limit: int = 20):
         "session": session_stats(),
         "resident": model_status(),
     }
-
-
 # --- auth --------------------------------------------------------------------
 
 class StaffLogin(BaseModel):
@@ -284,7 +284,7 @@ async def transcribe(audio: UploadFile = File(...)):
 
 # --- feature routers ---------------------------------------------------------
 
-for r in (scribe, consent, discharge, handoff, memory, orientation, patient, prescription):
+for r in (scribe, consent, discharge, handoff, memory, orientation, patient, prescription, agent):
     app.include_router(r.router)
 
 

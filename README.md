@@ -1,220 +1,74 @@
-# Confide — an on-premise clinical AI
+# CareTrace
 
-**Every conversation stays in the room.** A second clinician that never forgets — on-device, on Gemma 4, works with the network off.
+CareTrace is a local-first clinical intelligence assistant for hospital teams. It turns clinician-confirmed encounter facts into an evidence-linked patient timeline, runs deterministic safety checks, and produces clinician-approved drafts for documentation, handoff, billing review, and patient debriefs.
 
-![Gemma 4](https://img.shields.io/badge/Gemma%204-on--device-blue)
-![On-Prem](https://img.shields.io/badge/inference-100%25%20local-success)
-![Offline](https://img.shields.io/badge/network-not%20required-important)
-![Stack](https://img.shields.io/badge/FastAPI%20%2B%20React-Ollama-009688)
+All demo records are synthetic. CareTrace is clinical decision support, not a diagnosis, prescription, or autonomous medication-safety system.
 
-*Build with Gemma: JustBuild — Edge / On-Device Track*
+## Local clinical workflow agent
 
----
+One clinician input creates a reviewable draft bundle without sending data to a cloud service:
 
-## Problem
-
-The first ten minutes of any hospital visit are the most confusing, and for a scared, non-English-speaking patient they're frightening. Meanwhile clinicians make mistakes when they're tired and busy — a drug given against a known allergy, a contradiction nobody catches, a lab ordered and forgotten. Both failures share one root cause: **nobody can hold the whole patient in their head.** And in healthcare, the data is the most sensitive there is, so any solution that ships that data to a cloud API defeats its own purpose.
-
-Confide is a single always-on presence, tied to a patient for their stay, that **Hears** every conversation, **Remembers** everything in one living patient model, and **Watches over** the care, catching the mistakes people make. Everything runs on-device on Gemma 4, works with the network off, and never leaves the machine.
-
-```mermaid
-flowchart LR
-    A["🎧 HEAR<br/>speech + documents"] --> B["🧠 REMEMBER<br/>living patient graph"]
-    B --> C["🛡️ WATCH OVER<br/>The Guardian"]
-    C --> D["⚠️ Calm alert<br/>shown to clinician"]
-    style A fill:#1e3a5f,color:#fff
-    style B fill:#4a2c5e,color:#fff
-    style C fill:#5e2c2c,color:#fff
-    style D fill:#2c5e3a,color:#fff
+```text
+speech ── faster-whisper ─┐
+image  ── Tesseract OCR ──┼─> local gpt-oss tool loop ─> clinician review
+text   ───────────────────┘             │
+                                    CareTrace graph + Guardian
 ```
 
----
+- A spoken round drafts a note, source-linked facts, Guardian checks, evidence-backed billing candidates, an SBAR handoff, and a patient debrief.
+- A photographed prescription is transcribed by local Tesseract and reconciled against the existing record.
+- A typed correction records an audit-linked correction rather than silently overwriting history.
+- Notes, codes, handoffs, debriefs, reminders, and order actions stay as drafts until a clinician explicitly approves them.
 
-## Features
+## Safety and privacy boundary
 
-### 🎧 Hear — understand every conversation
+- Runtime inference, OCR, safety rules, and SQLite storage stay on the local CareTrace host.
+- `gpt-oss:20b` is the language layer only: it structures stated facts and drafts language.
+- Deterministic code in `core/curated.py` and `core/guardian.py` owns medication categories, interaction rules, clinical alerts, and billing-code validity.
+- Every Guardian alert is source-linked and requires clinician review.
+- Public traces show tool names, semantic arguments, and outcome summaries. Private reasoning is never persisted or shown.
+- Patient-facing summaries restate only clinician-confirmed, source-grounded facts.
 
-| Feature | Subtitle | Description |
-|---|---|---|
-| **Clinical Scribe** | Speech → structured note | Dictate a round; Gemma turns it into a note and grows the record in one pass. |
-| **Consent Explainer** | Sign it because you understood it | Reads the consent form, explains it in plain language, logs the patient's questions. |
-| **Live Translation** | Care in the patient's language | Everything the patient sees and hears renders in their chosen language, on-device. |
-| **Vision OCR** | Read any form or label | Photograph a consent sheet, discharge paper, or pill bottle; Gemma reads it. |
+## Key modules
 
-### 🧠 Remember — one living patient model
-
-| Feature | Subtitle | Description |
-|---|---|---|
-| **Live Patient Graph** | Memory made visible | Every fact becomes a node; the record grows node-by-node and carries across visits. |
-| **Ask the Room** | Answers from the record | Ask the patient's history out loud; grounded reply, only from what's on file. |
-| **Catch Me Up** | 15-second briefing | A covering clinician gets the whole stay summarized instantly. |
-| **SBAR Handoff** | Nothing dropped at shift change | Auto-writes the nurse-to-nurse handoff, urgent items first. |
-
-### 🛡 Watch over — the Guardian
-
-| Feature | Subtitle | Description |
-|---|---|---|
-| **Allergy & Interaction Alert** | Speaks up unprompted | Flags a drug that conflicts with a known allergy or another med — judgment in code, not the model. |
-| **Contradiction Catcher** | Remembers what you forgot | Notices when a patient denies something already on the record. |
-| **Forgotten-Order Catch** | Closes the loop | Surfaces un-rechecked labs and open orders at the end of an encounter. |
-| **Prescription Check** | Every script, safety-checked | Adds a prescription to the record and runs it through the allergy Guardian. |
-
-### 💙 Patient — entirely on their side
-
-| Feature | Subtitle | Description |
-|---|---|---|
-| **Ask Confide** | What's happening to me? | Calm, grounded, plain-language chat about their own care, streamed in their language. |
-| **My Day** | A checklist, not a lecture | Date, days since surgery, and today's meds/tasks — factual, no clichés. |
-| **My Medicines** | What each one is for | Their meds with plain purpose and schedule — plus scan-a-new-medicine at home. |
-| **Medicine Scanner** | Is this safe to take? | Point the camera at a new pill; warns if it conflicts with their record. |
-| **My Journey** | Care, visit by visit | Timeline of the whole stay with per-visit recaps and translated red flags. |
-
-### ⚙️ Platform — the foundation
-
-| Feature | Subtitle | Description |
-|---|---|---|
-| **On-Device Gemma 4** | Nothing leaves the machine | All inference and storage are local; works with the network off. |
-| **Guided Visit** | Onboard to discharge | A step-by-step workflow that walks the clinician through the whole encounter. |
-| **Live Inference Console** | Proof it's local | Shows every on-device Gemma call — prompt, output, latency — as it happens. |
-| **Evaluation Suite** | Measured, not claimed | Three-tier tests (deterministic · golden · LLM-judge) with a results dashboard. |
-
----
-
-## How we use Gemma 4
-
-One Gemma 4 model, served locally by **Ollama**, carries the entire product — reasoning **and** vision. Nothing leaves the machine.
-
-> ### Gemma 4 is the *language* layer. It is never the *decision* layer.
-
-Gemma extracts structured facts from messy speech and phrases sentences clearly. Every clinical judgment — does this drug conflict with that allergy, do two drugs interact, is this recheck overdue — is a deterministic lookup in curated, auditable code (`core/curated.py`), never something the model reasons about from memory.
-
-```
-  Voice · Vision · Text
-          │
-          ▼
-   GEMMA 4 (via Ollama)      →  language layer: extract facts + phrase (never decides)
-          │
-          ▼
-   LIVING PATIENT GRAPH      →  one record for the whole stay (SQLite)
-          │
-          ▼
-   THE GUARDIAN              →  decision layer: deterministic rules on curated drug data
-          │
-          ▼
-   Calm, Gemma-phrased alert to the clinician
-
-  ── all on-device · works with the network off ──
-```
-
-Remove Gemma and there's no product — it builds the structured memory everything else runs on. Core inference is local Gemma 4 (`localhost:11434`), proven by a live `NETWORK: OFF` toggle and a floating **Gemma console** (prompt → JSON → latency, in real time). Pull the Wi-Fi; it keeps working.
-
----
-
-## Value
-
-**User + problem**
-Clinicians (cognitive overload, safety slips) and patients like María — 68, limited English — who can't understand consent forms, medications, or discharge instructions.
-
-**Live outcomes**
-- Dictate a round → structured note + graph + Guardian check, in one pass.
-- Prescribe amoxicillin for a penicillin-allergic patient → **unprompted critical allergy alert**.
-- Patient scans a new pill → *"conflicts with your warfarin."*
-- Patient asks a question in Spanish → grounded answer, spoken back.
-
-**Better than today**
-Replaces a 10-minute interpreter wait, an unread consent form, and a clinician's memory as the *only* safety net — and adds proactive catches the status quo simply can't make.
-
-## Inputs & Data
-
-**Inputs**
-Speech (Whisper), typed text, photos of forms/pill bottles (Gemma vision). Answers are grounded **only** in the patient's own recorded facts.
-
-**Provenance**
-`input → Gemma extracts structured facts → facts persist as graph nodes tagged by source → Guardian reasons → UI renders`
-
-**Privacy (audited)**
-All inference and all storage are local — Gemma via local Ollama, Whisper, Piper, SQLite. No cloud, no external DB, no API keys. Patient data is git-ignored and never transmitted. **Air-gappable.**
-
-**Failure handling**
-Grammar-constrained JSON with retries, a deterministic lexicon fallback, TTS falls back to browser speech, and the med-checker refuses gracefully rather than guessing.
-
-## Enablement & Ease of Use
-
-**Workflow**
-Clinician steps through *Prepare → Consent → Meeting → Prescription → Handoff → Discharge*; the patient side has 3 tabs and a flag-icon language switch that re-renders everything.
-
-**Responsive**
-Structure renders instantly (no LLM in the critical path), AI content prefetches in parallel and streams token-by-token, and orientation is a checklist — not a wall of text.
-
-**Recovery + safeguards**
-Every spoken action has a typed fallback. Alerts are ack/dismiss. The med scanner is **check-only** and tells the patient to confirm with staff. Discharge Q&A **honestly refuses** out-of-document questions instead of guessing.
-
----
-
-## Evidence & Evaluation
-
-**Success criteria:** per-feature targets vs. measured — all met.
-
-**Repeatable metrics** — a three-tier eval:
-- Deterministic Guardian goldens — **9/9, precision 1.0, recall 1.0, 0 false negatives** (with negative cases proving no over-firing)
-- Golden extraction / red-flag checks
-- LLM-judge groundedness
-
-**27 golden cases + 14 unit tests, all green** — with results rendered on a live, offline evaluation dashboard.
-
-### Gemma token efficiency
-
-Measured on-device, no cloud involved:
-
-- **Token usage** — 1,050 input / 1,350 output tokens (2,400 total) across the eval run, at **16.6 tokens/sec** on-device.
-- **Precision benchmark** — Gemma 4 across quantization levels, real latency and throughput:
-
-  | Precision | Quant | Latency (p50) | Tokens/sec | Output tokens |
-  |---|---|---|---|---|
-  | 16-bit | BF16 | 25,366ms | 18.4 | 1,920 |
-  | 8-bit | Q8_0 | 17,791ms | 28.0 | 1,609 |
-  | 4-bit | BF16 | 7,760ms | 16.6 | 1,350 |
-
-  Lower precision trades some output length for roughly **3× lower latency** — a real deployment can pick the point on that curve that fits the hospital's hardware.
-
-**Honest limits:** assistive prototype, not a medical device. Curated drug subset, not a full formulary. CPU latency. LLM-judge grades Gemma (self-bias — hardening planned).
-
-**Verifies itself:** the Guardian fires unprompted and logs auditable alerts; the self-check surfaces un-done orders; the evaluation suite caught a real product safety bug (discharge deflecting instead of refusing), which was fixed.
-
-Run it yourself:
-
-```bash
-python -m eval.run_eval                     # everything (uses model if available)
-python -m eval.run_eval --only guardian     # one or more features (comma-separated)
-python -m eval.run_eval --no-model          # deterministic tiers only
-open eval/dashboard/index.html              # view results, offline
-```
-
----
+- `core/agent.py` — bounded tool orchestration, draft bundle construction, approval commits, and trace persistence.
+- `core/guardian.py` — deterministic allergy, interaction, contradiction, and overdue-order checks.
+- `core/curated.py` — auditable clinical and coding lookup tables.
+- `core/vision.py` — local image validation and Tesseract OCR; gpt-oss receives text, never images.
+- `features/agent.py` — run, upload, review, trace, and recent-run APIs.
+- `web/src/views/AgentRunView.jsx` — unified clinician capture and approval workflow.
+- `eval/agent_eval.py` — repeatable route, cross-modal safety, and coding validation checks.
 
 ## Quick start
 
+Prerequisites: Python 3.11+, Node 22.12+, [Ollama](https://ollama.com), and Tesseract.
+
 ```bash
-git clone git@github.com:Arnav710/build-with-gemma.git && cd build-with-gemma
-ollama pull gemma4                                   # local model
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-cd web && npm install && npm run build && cd ..      # build the SPA
-uvicorn app:app --reload                             # open http://localhost:8000
+
+ollama pull gpt-oss:20b
+
+npm --prefix web install
+npm --prefix web run build
+
+uvicorn app:app --host 127.0.0.1 --port 8000
 ```
 
-Then turn off Wi-Fi and use it — dictation, OCR, Q&A, translation, and Guardian alerts all keep working. Seeded logins: `doctor/confide`, `maria/confide`.
+Open `http://localhost:8000`. The seeded accounts and all demo data are synthetic.
 
-## Tech stack
+## Verification
 
-**Gemma 4 via Ollama** (reasoning + vision) · **faster-whisper** (STT) · **Piper** (TTS) · **SQLite** (living graph) · curated clinical tables in code (swap 1:1 for RxNorm/DrugBank) · **FastAPI** + **React/Vite**, all on `localhost`.
+```bash
+python -m pytest tests -q
+python -m eval.run_eval --only agent,coding --no-model
+python -m compileall -q core features app.py
+npm --prefix web run build
+```
 
-## Contributors
+The agent evaluation verifies all required tools run for each workflow, the synthetic prescription scenario produces the expected critical deterministic alert, and billing suggestions contain only curated, validated codes.
 
-Jenish Kothari · Akshay Kumar · Khushi Sidana · Arnav Modi
+## Development collaboration
 
-*Built for the Build with Gemma: JustBuild hackathon (Edge / On-Device track).*
-
----
-
-> **In one line:** an on-device, privacy-preserving second clinician — dangerous logic in verifiable code, the whole thing measured by an evaluation that already caught its own bug.
+Codex and GPT-5.6 accelerated the design, implementation, testing, review, and documentation of this local workflow. The product preserves the same boundary it enforces in code: the model proposes; deterministic rules and clinicians decide.

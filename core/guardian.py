@@ -2,7 +2,7 @@
 
 An always-on reasoning loop that checks what's said and done against the graph and
 speaks up on its own. Three behaviors, all triggered by deterministic code against
-curated data (core/curated.py). Gemma is used ONLY to phrase the human sentence —
+curated data (core/curated.py). GPT-OSS is used ONLY to phrase the human sentence —
 never to decide whether there's a problem.
 
   1. allergy / interaction  — a newly ordered drug vs. the patient's active
@@ -38,7 +38,7 @@ def _create_alert(patient_id, atype, severity, title, message, node_ids, encount
 
 def _phrase(kind: str, facts: str, fallback: str) -> str:
     """Phrase a gentle, clinician-facing alert. Templates are instant and read
-    naturally (default); Gemma phrasing is optional but adds latency on stage."""
+    naturally (default); GPT-OSS phrasing is optional but adds latency on stage."""
     if not GUARDIAN_LLM_PHRASING:
         return fallback
     try:
@@ -115,36 +115,38 @@ def check_medication(patient_id: int, med_node: dict, encounter_id: int | None =
     return alerts
 
 
-# --- pure assessment (no persistence) ----------------------------------------
-
 def assess_medication(patient_id: int, drug_label: str, drug_category: str | None = None) -> dict:
-    """Check a candidate drug against the patient's active allergies and current meds WITHOUT
-    writing anything to the record. Powers the patient-facing 'is this safe to take?' scan —
-    the same curated judgment as check_medication, but read-only and returning plain findings.
-
-    Returns {drug, category, safe, conflicts:[{kind, severity, with, message}]}.
-    """
+    """Read-only deterministic preview against active allergies and medications."""
     from core.curated import category_for_drug
 
-    cat = category_for_drug(drug_label, fallback=drug_category) or drug_category
-    conflicts: list[dict] = []
-    if cat:
-        actives = graph.nodes_for(patient_id, active_only=True)
-        for allergy in [n for n in actives if n["ntype"] == "allergy" and n.get("category")]:
-            if allergy_conflict(allergy["category"], cat):
+    category = category_for_drug(drug_label, fallback=drug_category)
+    conflicts = []
+    if category:
+        for node in graph.nodes_for(patient_id, active_only=True):
+            other_category = node.get("category")
+            if not other_category:
+                continue
+            if node["ntype"] == "allergy" and allergy_conflict(other_category, category):
                 conflicts.append({
-                    "kind": "allergy", "severity": "critical", "with": allergy["label"],
-                    "message": f"{drug_label} can react with your {allergy['label']} allergy.",
+                    "kind": "allergy", "severity": "critical", "with": node["label"],
+                    "node_id": node["id"], "rule": f"{other_category} conflicts with {category}",
+                    "message": f"Potential allergy conflict with {node['label']}. Requires clinician review.",
                 })
-        for other in [n for n in actives if n["ntype"] == "medication" and n.get("category")]:
-            inter = interaction_between(cat, other["category"])
-            if inter:
-                severity, why = inter
-                conflicts.append({
-                    "kind": "interaction", "severity": severity, "with": other["label"],
-                    "message": f"{drug_label} together with your {other['label']}: {why}.",
-                })
-    return {"drug": drug_label, "category": cat, "safe": len(conflicts) == 0, "conflicts": conflicts}
+            elif node["ntype"] == "medication":
+                interaction = interaction_between(category, other_category)
+                if interaction:
+                    severity, why = interaction
+                    conflicts.append({
+                        "kind": "interaction", "severity": severity, "with": node["label"],
+                        "node_id": node["id"], "rule": why,
+                        "message": f"Potential interaction with {node['label']}: {why}. Requires clinician review.",
+                    })
+    return {
+        "drug": drug_label,
+        "category": category,
+        "safe": not conflicts,
+        "conflicts": conflicts,
+    }
 
 
 # --- 2. contradiction --------------------------------------------------------

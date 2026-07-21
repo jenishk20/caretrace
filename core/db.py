@@ -53,12 +53,12 @@ CREATE TABLE IF NOT EXISTS encounters (
     summary TEXT,
     medications TEXT,                   -- JSON array (structured note view)
     follow_ups TEXT,                    -- JSON array
-    emotional_tone TEXT,                -- Gemma-inferred patient affect for this round
+    emotional_tone TEXT,                -- GPT-OSS-inferred patient affect for this round
     created_at TEXT NOT NULL
 );
 
 -- The living knowledge graph --------------------------------------------------
--- Each fact Confide learns is a node. Gemma extracts + tags; code owns the rest.
+-- Each fact Confide learns is a node. GPT-OSS extracts + tags; code owns the rest.
 CREATE TABLE IF NOT EXISTS graph_nodes (
     id INTEGER PRIMARY KEY,
     patient_id INTEGER NOT NULL REFERENCES patients(id),
@@ -159,6 +159,37 @@ CREATE TABLE IF NOT EXISTS orientation_sessions (
     script_text TEXT NOT NULL,
     audio_path TEXT,
     created_at TEXT NOT NULL
+);
+
+-- Dynamic agent runs and human-approved billing artifacts --------------------
+CREATE TABLE IF NOT EXISTS agent_runs (
+    id INTEGER PRIMARY KEY,
+    patient_id INTEGER NOT NULL REFERENCES patients(id),
+    encounter_id INTEGER NOT NULL UNIQUE REFERENCES encounters(id),
+    input_kind TEXT NOT NULL CHECK(input_kind IN ('speech','image','document','text')),
+    source_kind TEXT NOT NULL CHECK(source_kind IN ('round','prescription','correction')),
+    language TEXT NOT NULL DEFAULT 'en',
+    input_text TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'running' CHECK(status IN ('running','draft','approved','failed')),
+    trace TEXT NOT NULL DEFAULT '[]',
+    bundle TEXT NOT NULL DEFAULT '{}',
+    latency_ms INTEGER,
+    approved_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS billing_codes (
+    id INTEGER PRIMARY KEY,
+    patient_id INTEGER NOT NULL REFERENCES patients(id),
+    encounter_id INTEGER NOT NULL REFERENCES encounters(id),
+    system TEXT NOT NULL,
+    code TEXT NOT NULL,
+    label TEXT NOT NULL,
+    evidence TEXT NOT NULL,
+    validated INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    UNIQUE(encounter_id, system, code)
 );
 """
 

@@ -7,7 +7,6 @@ and strict JSON extraction.
 """
 from __future__ import annotations
 
-import base64
 import json
 import logging
 import re
@@ -122,11 +121,22 @@ def _dump(label: str, text: str, limit: int = 1200) -> None:
     log.info("\n" + "─" * 70 + f"\n[GPT-OSS] {label}\n" + "─" * 70 + f"\n{text}\n" + "─" * 70)
 
 
+def _with_effort(system: str | None, effort: str | None) -> str | None:
+    if effort not in (None, "low", "medium", "high"):
+        raise ValueError("effort must be low, medium, high, or None")
+    if not effort:
+        return system
+    prefix = f"Reasoning: {effort}"
+    return f"{prefix}\n\n{system}" if system else prefix
+
+
 def ask(prompt: str, system: str | None = None, temperature: float = 0.2,
-        max_tokens: int = 1024, fmt: str | None = None) -> str:
+        max_tokens: int = 1024, fmt: str | None = None,
+        effort: str | None = None) -> str:
     """Free-text completion. keep_alive holds the model in memory between calls so
     the demo stays warm; max_tokens caps generation. fmt='json' forces Ollama to
     emit syntactically valid JSON (used by ask_json for reliable extraction)."""
+    system = _with_effort(system, effort)
     messages = []
     if system:
         messages.append({"role": "system", "content": system})
@@ -200,21 +210,8 @@ def warmup() -> None:
 
 
 def ask_vision(prompt: str, image_path: str, system: str | None = None) -> str:
-    """Vision completion — used for OCR of consent / discharge forms."""
-    with open(image_path, "rb") as f:
-        image_b64 = base64.b64encode(f.read()).decode()
-    messages = []
-    if system:
-        messages.append({"role": "system", "content": system})
-    messages.append({"role": "user", "content": prompt, "images": [image_b64]})
-    _dump("VISION PROMPT", prompt)
-    t0 = time.time()
-    resp = _client.chat(model=OLLAMA_MODEL, messages=messages, options={"temperature": 0.1})
-    text = resp["message"]["content"].strip()
-    dt = time.time() - t0
-    _dump(f"VISION OUTPUT ({dt:.1f}s)", text)
-    _record("vision", prompt, text, dt, meta=dict(resp))
-    return text
+    """Reject image inference: gpt-oss is text-only and OCR belongs to Tesseract."""
+    raise NotImplementedError("gpt-oss is text-only; use core.vision.ocr (Tesseract)")
 
 
 def _extract_json(text: str) -> Any:
@@ -248,7 +245,8 @@ def _extract_json(text: str) -> Any:
     raise ValueError(f"No JSON found in model output:\n{text[:500]}")
 
 
-def ask_json(prompt: str, system: str | None = None, temperature: float = 0.1, retries: int = 2) -> Any:
+def ask_json(prompt: str, system: str | None = None, temperature: float = 0.1,
+             retries: int = 2, effort: str | None = None) -> Any:
     """Ask for JSON and parse it robustly. Uses Ollama's native JSON mode so the
     model is grammar-constrained to valid JSON, and retries on empty/parse failure."""
     sys = (system or "") + "\n\nRespond ONLY with a valid JSON value. No prose, no markdown fences."
@@ -257,7 +255,8 @@ def ask_json(prompt: str, system: str | None = None, temperature: float = 0.1, r
         # First attempts use JSON mode; a final attempt drops it in case the model
         # stalls under the grammar constraint on this hardware.
         use_json = attempt < retries
-        raw = ask(prompt, system=sys.strip(), temperature=temperature, fmt="json" if use_json else None)
+        raw = ask(prompt, system=sys.strip(), temperature=temperature,
+                  fmt="json" if use_json else None, effort=effort)
         if not raw:
             last_err = ValueError("Model returned empty output")
             continue
@@ -266,3 +265,54 @@ def ask_json(prompt: str, system: str | None = None, temperature: float = 0.1, r
         except ValueError as e:
             last_err = e
     raise last_err  # type: ignore[misc]
+
+
+def _value(obj: Any, name: str, default=None):
+    if isinstance(obj, dict):
+        return obj.get(name, default)
+    return getattr(obj, name, default)
+
+
+def ask_tools(messages: list[dict], tools: list[dict], effort: str | None = None) -> dict:
+    """Run one local tool-calling turn and return a JSON-serializable message.
+
+    Ollama tool calls do not currently carry an OpenAI-style call id, so a stable
+    per-message id is added for the public trace. Private ``thinking`` content is
+    deliberately neither returned nor persisted.
+    """
+    outbound = [dict(message) for message in messages]
+    if effort:
+        if outbound and outbound[0].get("role") == "system":
+            outbound[0]["content"] = _with_effort(outbound[0].get("content"), effort)
+        else:
+            outbound.insert(0, {"role": "system", "content": _with_effort(None, effort)})
+    prompt = "\n\n".join(str(m.get("content") or "") for m in outbound if m.get("content"))
+    t0 = time.time()
+    response = _client.chat(
+        model=OLLAMA_MODEL,
+        messages=outbound,
+        tools=tools,
+        keep_alive="30m",
+    )
+    raw_message = _value(response, "message", {})
+    content = (_value(raw_message, "content", "") or "").strip()
+    normalized_calls = []
+    for index, raw_call in enumerate(_value(raw_message, "tool_calls", []) or []):
+        function = _value(raw_call, "function", {})
+        arguments = _value(function, "arguments", {}) or {}
+        if isinstance(arguments, str):
+            try:
+                arguments = json.loads(arguments)
+            except json.JSONDecodeError:
+                arguments = {"_raw": arguments}
+        normalized_calls.append({
+            "id": _value(raw_call, "id", None) or f"call_{index}",
+            "function": {
+                "name": _value(function, "name", ""),
+                "arguments": arguments,
+            },
+        })
+    message = {"role": "assistant", "content": content, "tool_calls": normalized_calls}
+    duration = time.time() - t0
+    _record("tools", prompt, json.dumps(message, ensure_ascii=False), duration)
+    return message

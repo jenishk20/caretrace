@@ -133,10 +133,35 @@ def score_redflag(expected: bool, actual: bool) -> dict:
     return {"passed": bool(expected) == bool(actual), "expected": bool(expected), "actual": bool(actual)}
 
 
+def score_agent_route(expected_tools: list[str], trace: list[dict]) -> dict:
+    """Require every expected tool in its intended order."""
+    actual = [event.get("tool") for event in trace if event.get("tool")]
+    missing = [tool for tool in expected_tools if tool not in actual]
+    positions = [actual.index(tool) for tool in expected_tools if tool in actual]
+    out_of_order = positions != sorted(positions)
+    recall = (len(expected_tools) - len(missing)) / len(expected_tools) if expected_tools else 1.0
+    return {"passed": not missing and not out_of_order, "recall": recall,
+            "missing": missing, "actual": actual, "out_of_order": out_of_order}
+
+
+def score_codes(expected_codes: list[str], actual_codes: list[dict]) -> dict:
+    """Reject unexpected, missing, or unvalidated billing codes."""
+    expected = set(expected_codes)
+    actual = {item.get("code") for item in actual_codes if item.get("code")}
+    matched = expected & actual
+    precision = len(matched) / len(actual) if actual else (1.0 if not expected else 0.0)
+    recall = len(matched) / len(expected) if expected else 1.0
+    unvalidated = [item.get("code") for item in actual_codes if not item.get("validated")]
+    return {"passed": precision == 1.0 and recall == 1.0 and not unvalidated,
+            "precision": precision, "recall": recall,
+            "missing": sorted(expected - actual), "unexpected": sorted(actual - expected),
+            "unvalidated": unvalidated}
+
+
 # --- Tier 3: LLM-as-judge ----------------------------------------------------
 
 def score_judge(source: str, output: str, rubric: list[str]) -> dict:
-    """Grade a free-text output 1-5 per rubric criterion using Gemma itself.
+    """Grade a free-text output 1-5 per rubric criterion using GPT-OSS itself.
     Honestly model-graded; used only for prose where no exact answer exists.
     Returns {skipped: True} when no model is available."""
     from eval import model_client

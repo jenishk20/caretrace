@@ -6,7 +6,7 @@ An offline, self-contained view of the latest evaluation run.
 
 1. Run the suite from the repo root:
    ```bash
-   python -m eval.run_eval            # all features (uses gemma4 if available)
+   python -m eval.run_eval            # all features (uses gpt-oss:20b if available)
    python -m eval.run_eval --no-model # deterministic tiers only (no model needed)
    ```
    This writes `eval/results/latest.json` and `eval/results/latest.js`.

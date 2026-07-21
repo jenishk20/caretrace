@@ -1,7 +1,7 @@
 # Doctor Offline — Evaluation Framework Design
 
 **Date:** 2026-07-18
-**Context:** Build with Gemma / JustBuild hackathon, On-Device AI with Gemma 4 track.
+**Context:** Build with GPT-OSS / JustBuild hackathon, On-Device AI with GPT-OSS 20B track.
 **Goal:** A reliable, repeatable evaluation framework that produces real, judge-verifiable
 evidence for **Rubric Category 5 (Evidence & Evaluation, 20 pts)** and reinforces
 Category 4 (Underlying Model), Category 3 (Enablement/latency), and Category 2 (Inputs/Data).
@@ -13,12 +13,12 @@ Category 4 (Underlying Model), Category 3 (Enablement/latency), and Category 2 (
 Doctor Offline's core architectural claim (stated in `core/llm.py`, `core/curated.py`,
 `core/guardian.py`):
 
-> **Gemma is the language layer, never the decision-maker. Every clinical judgment
+> **GPT-OSS is the language layer, never the decision-maker. Every clinical judgment
 > lives in deterministic code.**
 
 The evaluation exists to *prove this split holds* with numbers:
 
-1. **Extraction** — Gemma reliably turns free text into correctly-typed, correctly-
+1. **Extraction** — GPT-OSS reliably turns free text into correctly-typed, correctly-
    categorized fact nodes.
 2. **Judgment** — the deterministic Guardian raises exactly the alerts the curated
    tables imply: no misses, no spurious alerts, no duplicates.
@@ -50,7 +50,7 @@ miss target, that becomes an **honest limitation** (also rubric-scored).
 
 ## 3. Scope
 
-Every Gemma-touching path:
+Every GPT-OSS-touching path:
 
 - **Scribe / graph extraction** (`features/scribe.py`, `core/graph.py:structure_and_extract`)
 - **Guardian** (`core/guardian.py`) — allergy, interaction, contradiction, forgotten order
@@ -61,7 +61,7 @@ Every Gemma-touching path:
 - **Cross-cutting**: JSON parse reliability, latency, offline operation
 
 Out of scope: STT/TTS audio quality (Whisper/Piper), OCR image quality (tested via
-text-path inputs so eval targets Gemma reasoning, not camera/mic hardware).
+text-path inputs so eval targets GPT-OSS reasoning, not camera/mic hardware).
 
 ---
 
@@ -78,7 +78,7 @@ Three scoring tiers, chosen per test so each check uses the cheapest sufficient 
         ┌────────────────────────────┼────────────────────────────┐
         ▼                            ▼                            ▼
   Tier 1: DETERMINISTIC        Tier 2: GOLDEN              Tier 3: LLM-JUDGE
-  code assertions              input→expected pairs        Gemma scores 1–5
+  code assertions              input→expected pairs        GPT-OSS scores 1–5
   (no model needed)            field precision/recall      faithfulness/clarity
   • Guardian firing            • extraction nodes          • consent/discharge prose
   • JSON schema validity       • red-flag labels           • orientation tone/safety
@@ -116,7 +116,7 @@ Guardian tier seeds a known graph state, then asserts the exact alert set.
 ```
 case (yaml) ─► harness: fresh temp DB, seed patient/graph
             ─► call real feature fn (scribe.capture / discharge.ask_question / ...)
-            ─► model_client → Gemma (live)  OR  stub (canned)
+            ─► model_client → GPT-OSS (live)  OR  stub (canned)
             ─► capture {output, latency_ms, raw_json_ok}
             ─► scorer(tier) → {passed, score, detail, expected, actual}
             ─► accumulate into results.json
@@ -136,7 +136,7 @@ written up (symptom → root cause → fix) on the dashboard:
 1. **Same-batch interaction miss.** `guardian.review_new_nodes` checks each new med
    against *active* meds. Two mutually-conflicting drugs dictated in one round may not
    cross-check each other depending on `ingest_facts` ordering. → reproducible case.
-2. **Gemma decides `is_red_flag`.** `features/discharge.py` lets the model set the
+2. **GPT-OSS decides `is_red_flag`.** `features/discharge.py` lets the model set the
    red-flag boolean — arguably a clinical decision, violating the code-decides thesis.
    → measure agreement vs. a code-based red-flag matcher; recommend moving the decision
    into code.
@@ -152,11 +152,11 @@ Each confirmed bug gets: failing case, root cause, minimal fix, and re-run showi
 
 ## 7. Where / how big
 
-- **Where:** locally on the demo machine (Apple M4 Max, 48 GB, Ollama + `gemma4`, Metal).
+- **Where:** locally on the demo machine (Apple M4 Max, 48 GB, Ollama + `gpt-oss:20b`, Metal).
   Tier-1 runs anywhere with no model. Offline is verified by running the full model suite
   with the network disabled.
 - **How big:** v1 ≈ 30–50 curated cases (5–10 per feature) + an adversarial set. Tier-1 is
-  milliseconds; each model case is one Gemma call (a few seconds on-device). Scales to
+  milliseconds; each model case is one GPT-OSS call (a few seconds on-device). Scales to
   hundreds without redesign — datasets are just more YAML.
 
 ---
@@ -165,7 +165,7 @@ Each confirmed bug gets: failing case, root cause, minimal fix, and re-run showi
 
 1. `eval/` framework (datasets, harness, scorers, runner, model client).
 2. `eval/results/latest.json` — real numbers (Tier-1 real immediately; model tiers real
-   once `gemma4` finishes pulling on this machine).
+   once `gpt-oss:20b` finishes pulling on this machine).
 3. `eval/dashboard/index.html` — offline dashboard visualizing all of the above.
 4. A bug report section: confirmed defects with root cause + fix + green re-run.
 5. Short "how to reproduce" note for judges (one command).
@@ -176,5 +176,5 @@ Each confirmed bug gets: failing case, root cause, minimal fix, and re-run showi
 
 - No CI integration, no web service for the eval — it's a local CLI + static dashboard.
 - No STT/TTS/OCR hardware benchmarking.
-- No multi-model comparison (only the on-device `gemma4` the product ships with).
+- No multi-model comparison (only the on-device `gpt-oss:20b` the product ships with).
 - No synthetic pharmacology beyond what `core/curated.py` already declares.

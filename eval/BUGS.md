@@ -11,7 +11,7 @@ candidate (an honest negative), and one is a **repeatability** fix.
 
 **Surfaced by:** `consent/anesthesia_question`
 
-**Symptom.** The case failed even though Gemma's answer was correct and safe:
+**Symptom.** The case failed even though GPT-OSS's answer was correct and safe:
 > "The form mentions risks associated with general anesthesia, but it does not state
 > whether you will be asleep during the procedure."
 
@@ -34,7 +34,7 @@ cannot hallucinate — it now passes grounding. (`eval/scorers.py`)
 recurrence … possible need for later surgery") scored overlap 0.35 and failed.
 
 **Root cause.** The overlap threshold (0.5, then 0.4) was being used as a *quality*
-bar. Gemma paraphrases ("please be aware", "the document notes"), which lowers literal
+bar. GPT-OSS paraphrases ("please be aware", "the document notes"), which lowers literal
 token overlap without lowering faithfulness.
 
 **Fix.** Overlap is now a lenient **anti-hallucination floor** (0.3): it only catches

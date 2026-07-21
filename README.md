@@ -34,6 +34,34 @@ See [SPEC.md](SPEC.md) for the complete scope and acceptance criteria.
 
 CareTrace is being built with Codex and GPT-5.6. The final demo and project description will show how Codex and GPT-5.6 accelerated the design, implementation, testing, and documentation work.
 
+## Run locally
+
+The first MVP slice uses only the Python standard library and runs entirely on localhost:
+
+```bash
+python3 app.py
+```
+
+Open <http://127.0.0.1:8787>. The dashboard offers synthetic, clinician-confirmed
+scenarios, source-linked Guardian alerts, a briefing/debrief, and an offline evaluation.
+
+To test an OpenAI-compatible local OSS model, start its server and set its loopback
+`/v1/models` URL before running CareTrace:
+
+```bash
+CARETRACE_LOCAL_MODEL_URL=http://127.0.0.1:8000/v1/models python3 app.py
+```
+
+Only loopback model URLs are accepted in this MVP's local-only mode.
+
+Run the deterministic checks with:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
 ## Status
 
-Product specification and agent guidance are ready. Application implementation is next.
+The basic local dashboard, SQLite timeline, deterministic Guardian rules, and synthetic
+evaluation flow are implemented. Scribe, prescription OCR, and model-backed structured
+drafting are the next features.

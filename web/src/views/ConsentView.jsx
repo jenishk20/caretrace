@@ -14,7 +14,7 @@ Alternatives: medication management, or coronary bypass surgery.
 
 By signing, you confirm the procedure and its risks were explained and your questions answered.`;
 
-export default function ConsentView({ pid, staff }) {
+export default function ConsentView({ pid, staff, patient }) {
   const [doc, setDoc] = useState(null);
   const [ocr, setOcr] = useState(SAMPLE);
   const [busy, setBusy] = useState(false);
@@ -64,6 +64,10 @@ export default function ConsentView({ pid, staff }) {
         CareTrace reads the form, explains it in plain language, and logs the patient's questions — real
         evidence they understood, not just a signature.
       </p>
+      <div className="soft-note" style={{ marginTop: -8, marginBottom: 20, fontSize: 13 }}>
+        🌐 Uses the patient portal language: <b>{patient?.primary_language === "es" ? "Español" : patient?.primary_language || "English"}</b>.
+        Consent explanations and answers stay in that language.
+      </div>
 
       <div className="two-col">
         <div className="card cn-form" style={{ padding: 18 }}>

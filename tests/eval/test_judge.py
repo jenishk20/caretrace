@@ -3,7 +3,7 @@ import pytest
 from eval import model_client, scorers
 
 
-@pytest.mark.skipif(not model_client.available(), reason="no ollama / gemma4")
+@pytest.mark.skipif(not model_client.available(), reason="no ollama / gpt-oss:20b")
 def test_judge_flags_hallucination():
     r = scorers.score_judge(
         source="Procedure: appendectomy. Risk: bleeding and infection.",
@@ -13,7 +13,7 @@ def test_judge_flags_hallucination():
     assert r["scores"]["faithfulness"] <= 2
 
 
-@pytest.mark.skipif(not model_client.available(), reason="no ollama / gemma4")
+@pytest.mark.skipif(not model_client.available(), reason="no ollama / gpt-oss:20b")
 def test_judge_rewards_faithful():
     r = scorers.score_judge(
         source="You may shower after 48 hours. Keep the wound clean and dry.",

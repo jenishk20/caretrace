@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Deliver the complete local gpt-oss agent run, human approval flow, unified frontend, trace, ROI, evaluation coverage, and positioning described in the approved rebuild design.
+**Goal:** Deliver the complete local gpt-oss agent run, human approval flow, unified frontend, trace, evaluation coverage, and positioning described in the approved rebuild design.
 
 **Architecture:** A FastAPI router binds a server-owned orchestration context and persists run state in SQLite. A bounded Ollama tool loop calls focused adapters around existing graph, Guardian, handoff, and patient-language logic; curated code validates every clinical and billing judgment. React renders one capture/review workflow and commits only explicit approvals.
 
@@ -35,7 +35,7 @@
 
 **Files:** `core/db.py`, `core/repo.py`, `core/curated.py`, `tests/test_agent_persistence.py`, `tests/test_billing.py`
 
-**Interfaces:** Produces agent-run CRUD, signed-note CRUD, billing finalization, `billing_candidates()`, `validate_code(system, code)`, and ROI aggregates.
+**Interfaces:** Produces agent-run CRUD, signed-note CRUD, billing finalization, `billing_candidates()`, and `validate_code(system, code)`.
 
 - [ ] Write failing schema/repository and curated-validation tests, including rejection of an invented code.
 - [ ] Run the focused tests and confirm failures.
@@ -47,7 +47,7 @@
 
 **Files:** `core/agent.py`, `tests/test_agent.py`
 
-**Interfaces:** Produces `ToolContext`, `prepare_input`, `run_agent`, `approve_run`, `get_trace`, `recent_runs`, and `patient_roi`; tools consume only semantic model arguments.
+**Interfaces:** Produces `ToolContext`, `prepare_input`, `run_agent`, `approve_run`, `get_trace`, and `recent_runs`; tools consume only semantic model arguments.
 
 - [ ] Write failing tests for round/document/correction routes, tool errors, loop limits, cross-modal Guardian checks, code filtering, and draft-only outputs.
 - [ ] Run focused tests and confirm missing interfaces.
@@ -60,9 +60,9 @@
 
 **Files:** `features/agent.py`, `features/__init__.py`, `app.py`, `tests/test_agent_api.py`
 
-**Interfaces:** Produces `POST /api/agent/run`, `POST /api/agent/upload`, `POST /api/agent/approve`, `GET /api/agent/runs/{encounter_id}/trace`, `GET /api/patients/{id}/agent-runs`, and `GET /api/patients/{id}/roi`.
+**Interfaces:** Produces `POST /api/agent/run`, `POST /api/agent/upload`, `POST /api/agent/approve`, `GET /api/agent/runs/{encounter_id}/trace`, and `GET /api/patients/{id}/agent-runs`.
 
-- [ ] Write failing FastAPI tests for validation, text run, upload, trace, selective approval, and ROI.
+- [ ] Write failing FastAPI tests for validation, text run, upload, trace, and selective approval.
 - [ ] Run focused API tests and confirm 404/missing routes.
 - [ ] Implement Pydantic contracts, upload handling, patient/run ownership checks, and exception translation.
 - [ ] Mount the router and keep the legacy model-log route as an alias to a neutral route.
@@ -83,18 +83,17 @@
 - [ ] Run `npm run build` and correct all production-build errors.
 - [ ] Commit the frontend workflow while preserving the user's existing prescription edit.
 
-### Task 6: ROI and evaluation
+### Task 6: Evaluation
 
-**Files:** `web/src/views/RoiView.jsx`, `web/src/pages/Workspace.jsx`, `eval/__init__.py`, `eval/harness.py`, `eval/scorers.py`, `eval/run_eval.py`, `eval/datasets/agent.yaml`, `eval/datasets/coding.yaml`, `tests/test_eval_scorers.py`
+**Files:** `eval/__init__.py`, `eval/harness.py`, `eval/scorers.py`, `eval/run_eval.py`, `eval/datasets/agent.yaml`, `eval/datasets/coding.yaml`, `tests/test_eval_scorers.py`
 
 **Interfaces:** `score_agent_route(expected, trace)` reports required-tool recall; `score_codes(expected, actual)` reports precision/recall and rejects unvalidated outputs.
 
 - [ ] Write failing scorer tests for missing route tools and unvalidated codes.
 - [ ] Implement standalone deterministic scorers and YAML-backed cases that patch language outputs.
-- [ ] Render conservative documentation-time, estimated coding value, near-miss, throughput, and latency metrics.
 - [ ] Run the evaluation command and focused tests; write `eval/results/latest.json`.
 - [ ] Run the frontend production build.
-- [ ] Commit the evaluation and ROI phase.
+- [ ] Commit the evaluation phase.
 
 ### Task 7: README, full verification, and branch review
 
@@ -103,7 +102,7 @@
 **Interfaces:** Documents local setup, model split, trust/approval boundary, demo sequence, seeded access, evaluation, and submission placeholders without unsupported claims.
 
 - [ ] Rewrite the relevant README sections, including `ollama pull gpt-oss:20b`, Tesseract, offline verification, Codex collaboration, and María demo steps.
-- [ ] Search for stale user-facing “Gemma” copy and replace it with `gpt-oss` or `on-device model` where appropriate.
+- [ ] Search for stale user-facing “GPT-OSS” copy and replace it with `gpt-oss` or `on-device model` where appropriate.
 - [ ] Run all pytest tests, `python -m eval.run_eval`, `python -m compileall`, and `npm run build`.
 - [ ] Review `git diff`, ensure unrelated user files are not overwritten or staged, and fix any gaps against every design acceptance criterion.
 - [ ] Commit final documentation and verified fixes.

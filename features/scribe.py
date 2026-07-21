@@ -62,7 +62,7 @@ def capture(body: CaptureRequest):
     if not repo.get_patient(body.patient_id):
         raise HTTPException(404, "Patient not found")
 
-    # One Gemma call yields both the structured note and the extracted facts.
+    # One GPT-OSS call yields both the structured note and the extracted facts.
     structured, facts = graph.structure_and_extract(body.transcript)
     encounter = repo.create_encounter(
         patient_id=body.patient_id,

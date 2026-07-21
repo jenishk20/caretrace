@@ -31,11 +31,11 @@ text   ───────────────────┘             
 
 ## Key modules
 
-- `core/agent.py` — bounded tool orchestration, draft bundle construction, approval commits, traces, and ROI calculations.
+- `core/agent.py` — bounded tool orchestration, draft bundle construction, approval commits, and trace persistence.
 - `core/guardian.py` — deterministic allergy, interaction, contradiction, and overdue-order checks.
 - `core/curated.py` — auditable clinical and coding lookup tables.
 - `core/vision.py` — local image validation and Tesseract OCR; gpt-oss receives text, never images.
-- `features/agent.py` — run, upload, review, trace, history, and ROI APIs.
+- `features/agent.py` — run, upload, review, trace, and recent-run APIs.
 - `web/src/views/AgentRunView.jsx` — unified clinician capture and approval workflow.
 - `eval/agent_eval.py` — repeatable route, cross-modal safety, and coding validation checks.
 

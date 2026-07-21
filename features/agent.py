@@ -135,10 +135,3 @@ def patient_runs(patient_id: int, limit: int = 3):
     if not repo.get_patient(patient_id):
         raise HTTPException(404, "Patient not found")
     return {"runs": core_agent.recent_runs(patient_id, limit)}
-
-
-@router.get("/api/patients/{patient_id}/roi")
-def roi(patient_id: int):
-    if not repo.get_patient(patient_id):
-        raise HTTPException(404, "Patient not found")
-    return core_agent.patient_roi(patient_id)

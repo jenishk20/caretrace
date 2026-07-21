@@ -89,7 +89,7 @@ def test_run_rejects_image_paths_outside_local_media(patient, monkeypatch, tmp_p
     assert called["ocr"] is False
 
 
-def test_trace_recent_runs_and_roi_are_exposed(patient):
+def test_trace_and_recent_runs_are_exposed(patient):
     encounter = repo.create_encounter(patient["id"], None, "round")
     repo.create_agent_run(patient["id"], encounter["id"], "text", "round", "en", "round")
     repo.update_agent_run(encounter["id"], trace=[{"tool": "run_guardian"}], bundle={"codes": []},
@@ -98,12 +98,9 @@ def test_trace_recent_runs_and_roi_are_exposed(patient):
 
     trace = client.get(f"/api/agent/runs/{encounter['id']}/trace")
     runs = client.get(f"/api/patients/{patient['id']}/agent-runs")
-    roi = client.get(f"/api/patients/{patient['id']}/roi")
 
     assert trace.json()["trace"] == [{"tool": "run_guardian"}]
     assert runs.json()["runs"][0]["encounter_id"] == encounter["id"]
-    assert roi.json()["runs"] == 1
-    assert roi.json()["avg_latency_ms"] == 100
 
 
 def test_approval_endpoint_rejects_cross_patient_run(patient):

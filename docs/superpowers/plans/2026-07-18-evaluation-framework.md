@@ -6,7 +6,7 @@
 
 **Architecture:** A standalone `eval/` package. The harness spins up a fresh temp SQLite DB per case (by repointing `core.db.DB_PATH`), calls the *real* feature functions, captures output + latency, and routes each output to a tier-appropriate scorer. Results serialize to `eval/results/latest.json`, which a self-contained `eval/dashboard/index.html` renders offline.
 
-**Tech Stack:** Python 3.11 (pyenv), pytest, PyYAML, the existing `core/*` + `features/*` modules, Ollama + `gemma4` for the live tiers. Dashboard is vanilla HTML/CSS/JS + inline SVG charts (no build step, works offline).
+**Tech Stack:** Python 3.11 (pyenv), pytest, PyYAML, the existing `core/*` + `features/*` modules, Ollama + `gpt-oss:20b` for the live tiers. Dashboard is vanilla HTML/CSS/JS + inline SVG charts (no build step, works offline).
 
 ## Global Constraints
 
@@ -15,7 +15,7 @@
 - The harness calls real production functions in `features/*` and `core/*` — no reimplementations.
 - Each case runs against a fresh temp DB; no shared state between cases.
 - Dashboard must render with the network disabled (single self-contained file reading a local JSON).
-- On-device model tag is `gemma4` via Ollama at `http://localhost:11434` (from `core/config.py`).
+- On-device model tag is `gpt-oss:20b` via Ollama at `http://localhost:11434` (from `core/config.py`).
 - Deterministic tier (Guardian, JSON-schema, grounding-overlap) must run with NO model available.
 
 ---
@@ -277,7 +277,7 @@ def test_judge_flags_hallucination():
 
 - [ ] **Step 2: Run → SKIP (if model still pulling) or FAIL (module missing).**
 - [ ] **Step 3: Implement** `model_client.available()` and `score_judge` (JSON grading prompt returning integer 1–5 per rubric criterion + an `unsupported` list; compute `mean`).
-- [ ] **Step 4: Run → PASS once `gemma4` is available.**
+- [ ] **Step 4: Run → PASS once `gpt-oss:20b` is available.**
 - [ ] **Step 5: Commit** — `git commit -am "feat(eval): LLM-as-judge scorer + model client"`
 
 ---
@@ -351,7 +351,7 @@ def test_redflag_match():
 ```
 
 - [ ] **Step 3: Run → FAIL.**
-- [ ] **Step 4: Implement** the scorers, then the `run_*_case` functions. Discharge runner: `repo.create_document(...)` directly with the yaml `ocr_text` + `red_flags` (skip the Gemma explain build so grounding test isolates the Q&A path), then call `features.discharge.ask_question(doc_id, QuestionRequest(...))`; score grounding (code) + red-flag (vs label) + judge (optional). Scribe runner: `graph.structure_and_extract(transcript)` and, for adversarial, run the full `scribe.capture` and inspect returned `alerts`.
+- [ ] **Step 4: Implement** the scorers, then the `run_*_case` functions. Discharge runner: `repo.create_document(...)` directly with the yaml `ocr_text` + `red_flags` (skip the GPT-OSS explain build so grounding test isolates the Q&A path), then call `features.discharge.ask_question(doc_id, QuestionRequest(...))`; score grounding (code) + red-flag (vs label) + judge (optional). Scribe runner: `graph.structure_and_extract(transcript)` and, for adversarial, run the full `scribe.capture` and inspect returned `alerts`.
 - [ ] **Step 5: Run → PASS** (pure-function tests; model-dependent runners validated in Task 7).
 - [ ] **Step 6: Commit** — `git commit -am "feat(eval): feature datasets + runners + scorers"`
 
@@ -369,7 +369,7 @@ def test_redflag_match():
 
 ```json
 {
-  "generated_at": "...", "model": "gemma4", "model_available": true,
+  "generated_at": "...", "model": "gpt-oss:20b", "model_available": true,
   "summary": {"guardian": {"passed": 6, "total": 6, "recall": 1.0}, "...": {}},
   "cases": [{"feature": "guardian", "id": "...", "passed": true, "score": {}, "latency_ms": 3}],
   "latency": {"scribe": {"p50": 0, "p95": 0}},

@@ -14,12 +14,11 @@ Each run persists its public trace and draft bundle. Facts and safety alerts are
 
 - `core/llm.py`: gpt-oss configuration, reasoning-effort system prefix, Ollama tool turns, and neutral local-model telemetry.
 - `core/vision.py`: Tesseract-only OCR with actionable local errors.
-- `core/agent.py`: input preparation, schemas, tool adapters, bounded orchestration loop, deterministic fallback route, trace summarization, bundle construction, approval, and ROI queries.
+- `core/agent.py`: input preparation, schemas, tool adapters, bounded orchestration loop, deterministic fallback route, trace summarization, bundle construction, and approval.
 - `core/curated.py`: compact ICD-10/CPT source of truth and deterministic validation.
 - `core/db.py` / `core/repo.py`: agent runs, finalized billing codes, signed notes, and approval/audit state.
-- `features/agent.py`: run, upload, approval, trace, recent-run, and ROI HTTP contracts.
+- `features/agent.py`: run, upload, approval, trace, and recent-run HTTP contracts.
 - `web/src/views/AgentRunView.jsx`: unified capture, visible working state, draft review, selective approval, camera/sample fallback, trace explanation, and three-run comparison.
-- `web/src/views/RoiView.jsx`: clearly labeled conservative estimates from persisted local activity.
 - `eval/` and tests: deterministic route, cross-modal safety, billing validation, approval-boundary, and API tests that do not require a running model.
 
 ## Data Flow and Failure Handling
@@ -30,6 +29,6 @@ The API rejects missing or mismatched input, nonexistent patients, unknown tools
 
 ## Testing and Acceptance
 
-Tests patch language-model boundaries while exercising real SQLite, graph, Guardian, curated validation, routing, approval, trace, and ROI code. The María sequence must create warfarin context, detect ketorolac's curated anticoagulant/NSAID interaction from a document run, and route a cancellation through the minimal correction path. Frontend production build and Python compilation must pass, and existing endpoints remain mounted.
+Tests patch language-model boundaries while exercising real SQLite, graph, Guardian, curated validation, routing, approval, and trace code. The María sequence must create warfarin context, detect ketorolac's curated anticoagulant/NSAID interaction from a document run, and route a cancellation through the minimal correction path. Frontend production build and Python compilation must pass, and existing endpoints remain mounted.
 
 The authoritative detailed requirements and phase acceptance criteria are the user-supplied `2026-07-20-agent-orchestration-rebuild.md`; this document records the implementation decisions applied to this repository.

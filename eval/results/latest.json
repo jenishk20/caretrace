@@ -103,7 +103,7 @@
       "id": "grounding_false_negative_on_refusal",
       "title": "Eval scorer false-failed honest refusals",
       "status": "fixed",
-      "symptom": "consent 'anesthesia_question' failed even though Gemma correctly said the form doesn't state whether the patient is asleep.",
+      "symptom": "consent 'anesthesia_question' failed even though GPT-OSS correctly said the form doesn't state whether the patient is asleep.",
       "root_cause": "score_grounding used token overlap only; an answer ABOUT the absence of info naturally shares few words with the source, so honest refusals looked like hallucinations.",
       "fix": "Detect refusal phrasing (is_refusal) and treat refusals as non-hallucinating; a refusal now passes grounding."
     },

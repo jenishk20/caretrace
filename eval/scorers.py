@@ -161,7 +161,7 @@ def score_codes(expected_codes: list[str], actual_codes: list[dict]) -> dict:
 # --- Tier 3: LLM-as-judge ----------------------------------------------------
 
 def score_judge(source: str, output: str, rubric: list[str]) -> dict:
-    """Grade a free-text output 1-5 per rubric criterion using Gemma itself.
+    """Grade a free-text output 1-5 per rubric criterion using GPT-OSS itself.
     Honestly model-graded; used only for prose where no exact answer exists.
     Returns {skipped: True} when no model is available."""
     from eval import model_client

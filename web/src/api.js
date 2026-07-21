@@ -94,8 +94,6 @@ export const api = {
   agentTrace: (encounterId) => req(`/api/agent/runs/${encounterId}/trace`),
   agentRun: (encounterId) => req(`/api/agent/runs/${encounterId}`),
   agentRuns: (patientId, limit = 3) => req(`/api/patients/${patientId}/agent-runs?limit=${limit}`),
-  patientRoi: (patientId) => req(`/api/patients/${patientId}/roi`),
-
   // consent
   consentText: (data) => req("/api/consent/forms/text", { method: "POST", body: data }),
   consentImage: (patientId, staffId, file) => {

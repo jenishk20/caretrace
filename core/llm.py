@@ -16,7 +16,7 @@ from typing import Any
 
 import ollama
 
-from core.config import AGENT_MODEL, OLLAMA_HOST, OLLAMA_MODEL
+from core.config import OLLAMA_HOST, OLLAMA_MODEL
 
 _client = ollama.Client(host=OLLAMA_HOST)
 
@@ -289,7 +289,7 @@ def ask_tools(messages: list[dict], tools: list[dict], effort: str | None = None
     prompt = "\n\n".join(str(m.get("content") or "") for m in outbound if m.get("content"))
     t0 = time.time()
     response = _client.chat(
-        model=AGENT_MODEL,
+        model=OLLAMA_MODEL,
         messages=outbound,
         tools=tools,
         keep_alive="30m",

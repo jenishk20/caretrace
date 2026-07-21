@@ -2,7 +2,7 @@
 
 An always-on reasoning loop that checks what's said and done against the graph and
 speaks up on its own. Three behaviors, all triggered by deterministic code against
-curated data (core/curated.py). Gemma is used ONLY to phrase the human sentence —
+curated data (core/curated.py). GPT-OSS is used ONLY to phrase the human sentence —
 never to decide whether there's a problem.
 
   1. allergy / interaction  — a newly ordered drug vs. the patient's active
@@ -38,7 +38,7 @@ def _create_alert(patient_id, atype, severity, title, message, node_ids, encount
 
 def _phrase(kind: str, facts: str, fallback: str) -> str:
     """Phrase a gentle, clinician-facing alert. Templates are instant and read
-    naturally (default); Gemma phrasing is optional but adds latency on stage."""
+    naturally (default); GPT-OSS phrasing is optional but adds latency on stage."""
     if not GUARDIAN_LLM_PHRASING:
         return fallback
     try:

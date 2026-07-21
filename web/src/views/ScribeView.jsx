@@ -107,7 +107,7 @@ export default function ScribeView({ pid, staff, snapshot, refresh }) {
   );
 }
 
-// Gemma-inferred patient affect for the round. Color-coded so a distressed
+// GPT-OSS-inferred patient affect for the round. Color-coded so a distressed
 // patient reads at a glance without changing the note layout.
 const TONE_COLORS = {
   anxious: "#ffb84d", distressed: "#ff5a6e", "in pain": "#ff5a6e",

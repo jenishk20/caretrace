@@ -3,7 +3,7 @@
 Two responsibilities:
   1. Persistence: add / query nodes and edges for a patient.
   2. Extraction: turn a free-text transcript into structured, category-tagged
-     fact nodes using Gemma (the language layer only — no clinical judgment here).
+     fact nodes using GPT-OSS (the language layer only — no clinical judgment here).
 
 The Guardian (core/guardian.py) reads this graph and decides what to speak up
 about. Extraction and judgment are deliberately separate.
@@ -100,7 +100,7 @@ def supersede_node(node_id: int) -> dict | None:
 
 
 def context_text(patient_id: int) -> str:
-    """Render the patient's active graph as compact grounding text for Gemma —
+    """Render the patient's active graph as compact grounding text for GPT-OSS —
     used by ask-the-room, catch-me-up, handoff, orientation, and patient chat.
     This is the 'memory' every downstream answer is grounded in."""
     from core import repo
@@ -208,7 +208,7 @@ def _normalize_facts(facts) -> list[dict]:
 
 
 def extract_facts(transcript: str) -> list[dict]:
-    """Gemma -> list of fact dicts. Normalizes categories against curated data."""
+    """GPT-OSS -> list of fact dicts. Normalizes categories against curated data."""
     prompt = EXTRACT_PROMPT_TEMPLATE.format(vocab=_VOCAB, transcript=transcript)
     facts = ask_json(prompt, system=EXTRACT_SYSTEM)
     return _normalize_facts(facts)
@@ -245,7 +245,7 @@ Dictation:
 
 
 def structure_and_extract(transcript: str) -> tuple[dict, list[dict]]:
-    """One Gemma call returning both the structured note and normalized facts —
+    """One GPT-OSS call returning both the structured note and normalized facts —
     half the latency of two separate calls in the live scribe path."""
     prompt = COMBINED_PROMPT_TEMPLATE.format(vocab=_VOCAB, transcript=transcript)
     data = ask_json(prompt, system=EXTRACT_SYSTEM)

@@ -10,7 +10,7 @@ the same way every time. A real deployment swaps this for RxNorm / DrugBank.
 from __future__ import annotations
 
 # --- Controlled vocabulary of categories -------------------------------------
-# Gemma is told to tag every extracted drug/allergy/statement with one of these.
+# GPT-OSS is told to tag every extracted drug/allergy/statement with one of these.
 DRUG_CATEGORIES = [
     "anticoagulant",       # warfarin, heparin, apixaban, ...
     "nsaid",               # ibuprofen, ketorolac, aspirin, naproxen
@@ -27,7 +27,7 @@ DRUG_CATEGORIES = [
 ]
 
 # Map a specific drug name (lowercased) -> its category. Belt-and-suspenders on
-# top of Gemma's own tagging: if the model tags loosely, we normalize by name.
+# top of GPT-OSS's own tagging: if the model tags loosely, we normalize by name.
 DRUG_TO_CATEGORY = {
     "warfarin": "anticoagulant",
     "coumadin": "anticoagulant",

@@ -18,7 +18,6 @@ OLLAMA_HOST = os.environ.get("CARETRACE_OLLAMA_HOST", "http://127.0.0.1:11434")
 if urlparse(OLLAMA_HOST).hostname not in {"localhost", "127.0.0.1", "::1"}:
     raise RuntimeError("CARETRACE_OLLAMA_HOST must be a loopback endpoint in local-only mode.")
 OLLAMA_MODEL = os.environ.get("CARETRACE_LOCAL_MODEL", "gpt-oss:20b")
-AGENT_MODEL = "gpt-oss:20b"
 REASONING_EFFORT_HIGH = "high"
 REASONING_EFFORT_LOW = "low"
 LLM_TIMEOUT = 120  # seconds — local models can occasionally stall

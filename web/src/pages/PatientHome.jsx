@@ -21,6 +21,24 @@ const LANGS = [
   { code: "vi", label: "Tiếng Việt", flag: "🇻🇳" },
 ];
 const BCP = { en: "en-US", es: "es-ES", zh: "zh-CN", fr: "fr-FR", hi: "hi-IN", ar: "ar-SA", pt: "pt-PT", vi: "vi-VN" };
+const CHAT_COPY = {
+  en: {
+    title: "CareTrace is with you",
+    subtitle: "Calm, plain answers in your language — on this device.",
+    greeting: (name) => `Hi ${name}. Ask me anything about your care — I'll answer in your language.`,
+    suggestions: ["What's happening to me?", "Why am I here?", "What are my medications for?", "Is it serious?"],
+    placeholder: "Ask me anything…",
+    send: "Send",
+  },
+  es: {
+    title: "CareTrace está contigo",
+    subtitle: "Respuestas claras y tranquilas en tu idioma — en este dispositivo.",
+    greeting: (name) => `Hola ${name}. Pregúntame lo que quieras sobre tu atención; te responderé en español.`,
+    suggestions: ["¿Qué me está pasando?", "¿Por qué estoy aquí?", "¿Para qué son mis medicamentos?", "¿Es grave?"],
+    placeholder: "Pregúntame lo que quieras…",
+    send: "Enviar",
+  },
+};
 
 function speak(text, lang) {
   try {
@@ -51,9 +69,8 @@ export default function PatientHome() {
   const [lang, setLang] = useState(me?.primary_language || "en");
   const [tab, setTab] = useState("home");
 
-  // Prefetched data, kicked off in parallel on mount / language change so every tab is
-  // already filled by the time the patient clicks it (Ollama serializes the calls, but
-  // starting them now means they're done — or nearly — before navigation).
+  // Fast record data loads on entry. Model-written translations wait for the patient to
+  // open that section, so a chat question is never held behind background model work.
   const [day, setDay] = useState(null);
   const [dayBusy, setDayBusy] = useState(false);
   const [meds, setMeds] = useState(null);
@@ -70,26 +87,33 @@ export default function PatientHome() {
   const loadMeds = useCallback(() => {
     if (!pid) return;
     setMeds(null);
-    api.patientMedications(pid, lang).then((r) => {
-      setMeds(r.medications);
-      api.patientMedPurposes(pid, lang).then((pr) => {
-        setMeds((cur) => (cur || []).map((m) => ({ ...m, purpose: pr.purposes[m.name.toLowerCase()] || m.purpose })));
-      }).catch(() => {});
-    }).catch(() => setMeds([]));
+    api.patientMedications(pid, lang).then((r) => setMeds(r.medications)).catch(() => setMeds([]));
     api.patientReminders(pid).then(setReminders).catch(() => {});
+  }, [pid, lang]);
+
+  const loadMedPurposes = useCallback(() => {
+    if (!pid) return;
+    api.patientMedPurposes(pid, lang).then((pr) => {
+      setMeds((cur) => (cur || []).map((m) => ({ ...m, purpose: pr.purposes[m.name.toLowerCase()] || m.purpose })));
+    }).catch(() => {});
   }, [pid, lang]);
 
   const loadJourney = useCallback(() => {
     if (!pid) return;
     setJourney(null);
-    api.patientJourney(pid, lang, false).then((fast) => {
-      setJourney(fast);
-      api.patientJourney(pid, lang, true).then(setJourney).catch(() => {});
-    }).catch(() => setJourney({ visits: [] }));
+    api.patientJourney(pid, lang, false).then(setJourney).catch(() => setJourney({ visits: [] }));
   }, [pid, lang]);
 
-  // Parallel prefetch — everything warms up at once.
-  useEffect(() => { loadDay(); loadMeds(); loadJourney(); }, [loadDay, loadMeds, loadJourney]);
+  const loadJourneyTranslation = useCallback(() => {
+    if (!pid) return;
+    api.patientJourney(pid, lang, true).then(setJourney).catch(() => {});
+  }, [pid, lang]);
+
+  useEffect(() => { loadMeds(); loadJourney(); }, [loadMeds, loadJourney]);
+  useEffect(() => {
+    if (tab === "meds") loadMedPurposes();
+    if (tab === "journey") loadJourneyTranslation();
+  }, [tab, loadMedPurposes, loadJourneyTranslation]);
 
   function logout() { session.clearPatient(); nav("/"); }
 
@@ -162,6 +186,7 @@ function HomeTab({ me, lang, day, dayBusy, loadDay }) {
   const [busy, setBusy] = useState(false);
   const [debrief, setDebrief] = useState(null);
   const scrollRef = useRef(null);
+  const copy = CHAT_COPY[lang] || CHAT_COPY.en;
 
   useEffect(() => { setMessages([]); }, [lang]);
   useEffect(() => { scrollRef.current?.scrollTo({ top: 9e9, behavior: "smooth" }); }, [messages]);
@@ -187,21 +212,19 @@ function HomeTab({ me, lang, day, dayBusy, loadDay }) {
     } finally { setBusy(false); }
   }
 
-  const SUGGEST = ["What's happening to me?", "Why am I here?", "What are my medications for?", "Is it serious?"];
-
   return (
     <div className="home-grid">
       <div className="ph-chat card">
         <div className="ph-chat-head">
           <div className="orb" />
           <div>
-            <b>CareTrace is with you</b>
-            <div className="muted" style={{ fontSize: 12 }}>Calm, plain answers in your language — on this device.</div>
+            <b>{copy.title}</b>
+            <div className="muted" style={{ fontSize: 12 }}>{copy.subtitle}</div>
           </div>
         </div>
         <div className="ph-messages" ref={scrollRef}>
           {messages.length === 0 && (
-            <div className="bubble confide">Hi {me.name?.split(" ")[0]}. Ask me anything about your care — I'll answer in your language.</div>
+            <div className="bubble confide">{copy.greeting(me.name?.split(" ")[0])}</div>
           )}
           {messages.map((m, i) => (
             <div key={i} className={`bubble ${m.from}`}>
@@ -219,12 +242,12 @@ function HomeTab({ me, lang, day, dayBusy, loadDay }) {
           ))}
         </div>
         <div className="ph-suggest">
-          {SUGGEST.map((s) => <button key={s} className="chip" onClick={() => send(s)} disabled={busy}>{s}</button>)}
+          {copy.suggestions.map((s) => <button key={s} className="chip" onClick={() => send(s)} disabled={busy}>{s}</button>)}
         </div>
         <div className="ph-input">
-          <input className="input" placeholder="Ask me anything…" value={input}
+          <input className="input" placeholder={copy.placeholder} value={input}
             onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} />
-          <button className="btn btn-primary" onClick={() => send()} disabled={busy}>Send</button>
+          <button className="btn btn-primary" onClick={() => send()} disabled={busy}>{copy.send}</button>
         </div>
       </div>
 

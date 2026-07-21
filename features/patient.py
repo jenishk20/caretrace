@@ -68,6 +68,16 @@ CHAT_SYSTEM = (
 )
 
 
+def _chat_system_for(lang: str) -> str:
+    """Make the response language a hard instruction, not just prompt context.
+
+    GPT-OSS follows this far more reliably when it is explicit in both the system
+    message and user request. The patient may ask in a different language; that
+    does not change their selected response language.
+    """
+    return f"{CHAT_SYSTEM}\n\nLANGUAGE LOCK: Reply only in {lang}. Do not answer in English unless {lang} is English."
+
+
 @router.post("/chat")
 def chat(body: ChatRequest):
     """'What's happening to me?' — grounded plain-language answer, in the patient's language."""
@@ -79,7 +89,7 @@ def chat(body: ChatRequest):
     answer = ask(
         f"The patient's recorded care:\n{ctx}\n\nThe patient asks: {body.message}\n\n"
         f"Answer them warmly and plainly, writing ENTIRELY in {lang}:",
-        system=CHAT_SYSTEM,
+        system=_chat_system_for(lang),
     )
     repo.log_qa(body.patient_id, "patient_chat", body.message, answer, asked_by="patient")
     return {"message": body.message, "answer": answer, "language": lang}
@@ -101,7 +111,7 @@ def chat_stream(body: ChatRequest):
 
     def gen():
         parts: list[str] = []
-        for piece in ask_stream(prompt, system=CHAT_SYSTEM):
+        for piece in ask_stream(prompt, system=_chat_system_for(lang)):
             parts.append(piece)
             yield piece
         repo.log_qa(body.patient_id, "patient_chat", body.message, "".join(parts), asked_by="patient")

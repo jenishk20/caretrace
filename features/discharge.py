@@ -77,14 +77,16 @@ def _build(patient_id, staff_id, ocr_text):
 async def create_doc(
     patient_id: int = Form(...), staff_id: int | None = Form(None), image: UploadFile = File(...),
 ):
+    """Transcribe a discharge-sheet photo for clinician review before ingestion."""
     if not repo.get_patient(patient_id):
         raise HTTPException(404, "Patient not found")
     data = await image.read()
-    path = vision.save_image(data, suffix="." + (image.filename or "png").split(".")[-1])
-    ocr_text = vision.ocr(path)
-    doc = _build(patient_id, staff_id, ocr_text)
-    doc["image_path"] = path
-    return doc
+    try:
+        return {"ocr_text": vision.ocr_bytes(data)}
+    except ValueError as error:
+        raise HTTPException(400, str(error)) from error
+    except RuntimeError as error:
+        raise HTTPException(503, str(error)) from error
 
 
 @router.post("/documents/text")

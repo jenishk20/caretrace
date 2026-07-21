@@ -20,6 +20,16 @@ def test_prepare_input_accepts_browser_pretranscribed_speech():
     assert agent.prepare_input("speech", text="spoken round") == ("spoken round", "speech")
 
 
+def test_prepare_input_routes_document_bytes_through_hardened_ocr(monkeypatch, tmp_path):
+    image_path = tmp_path / "prescription.png"
+    image_path.write_bytes(b"validated image bytes")
+    seen = {}
+    monkeypatch.setattr(agent.vision, "ocr_bytes", lambda data: seen.setdefault("data", data) and "ketorolac")
+
+    assert agent.prepare_input("image", image_path=str(image_path)) == ("ketorolac", "document")
+    assert seen["data"] == b"validated image bytes"
+
+
 def test_input_kinds_drive_distinct_model_selected_tool_paths(patient, monkeypatch):
     routes = {
         "speech": [

@@ -3,7 +3,6 @@ import unittest
 from io import BytesIO
 
 from PIL import Image, ImageDraw, ImageFont
-from types import SimpleNamespace
 
 from core import vision
 
@@ -53,18 +52,15 @@ if __name__ == "__main__":
     unittest.main()
 
 
-def test_ocr_invokes_local_tesseract(monkeypatch):
-    seen = {}
+def test_save_image_validates_and_normalizes_upload(monkeypatch, tmp_path):
+    monkeypatch.setattr(vision, "IMAGES_DIR", tmp_path)
 
-    def fake_run(command, **kwargs):
-        seen["command"] = command
-        seen["kwargs"] = kwargs
-        return SimpleNamespace(stdout="  KETOROLAC 10 MG\n")
+    path = vision.save_image(_image_bytes())
 
-    monkeypatch.setattr(vision.subprocess, "run", fake_run)
+    with Image.open(path) as saved:
+        assert saved.format == "PNG"
 
-    assert vision.ocr("/tmp/prescription.png") == "KETOROLAC 10 MG"
-    assert seen == {
-        "command": ["tesseract", "/tmp/prescription.png", "stdout"],
-        "kwargs": {"capture_output": True, "text": True, "check": True},
-    }
+
+def test_save_image_rejects_non_images():
+    with unittest.TestCase().assertRaisesRegex(ValueError, "valid PNG, JPEG, or WebP"):
+        vision.save_image(b"not an image")

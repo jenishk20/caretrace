@@ -62,7 +62,7 @@ def test_run_rejects_missing_input_and_unknown_patient(patient):
 
 def test_image_upload_returns_local_path(patient, monkeypatch, tmp_path):
     saved = tmp_path / "rx.png"
-    monkeypatch.setattr(application.agent.vision, "save_image", lambda data, suffix=".png": str(saved))
+    monkeypatch.setattr(application.agent.vision, "save_image", lambda data: str(saved))
     client = TestClient(application.app)
 
     response = client.post(
@@ -74,11 +74,22 @@ def test_image_upload_returns_local_path(patient, monkeypatch, tmp_path):
     assert response.json() == {"path": str(saved), "media_url": f"/media/{saved.name}"}
 
 
+def test_image_upload_rejects_invalid_image_bytes(patient):
+    client = TestClient(application.app)
+
+    response = client.post(
+        "/api/agent/upload",
+        files={"image": ("rx.png", b"not an image", "image/png")},
+    )
+
+    assert response.status_code == 422
+
+
 def test_run_rejects_image_paths_outside_local_media(patient, monkeypatch, tmp_path):
     outside = tmp_path / "outside.png"
     outside.write_bytes(b"not a real image")
-    called = {"ocr": False}
-    monkeypatch.setattr(core_agent.vision, "ocr", lambda path: called.update(ocr=True))
+    called = {"ocr_bytes": False}
+    monkeypatch.setattr(core_agent.vision, "ocr_bytes", lambda data: called.update(ocr_bytes=True))
     client = TestClient(application.app)
 
     response = client.post("/api/agent/run", json={
@@ -86,7 +97,7 @@ def test_run_rejects_image_paths_outside_local_media(patient, monkeypatch, tmp_p
     })
 
     assert response.status_code == 422
-    assert called["ocr"] is False
+    assert called["ocr_bytes"] is False
 
 
 def test_trace_and_recent_runs_are_exposed(patient):

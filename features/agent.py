@@ -95,8 +95,10 @@ async def upload(image: UploadFile = File(...)):
     data = await image.read()
     if not data:
         raise HTTPException(422, "Image is empty")
-    suffix = Path(image.filename or "capture.png").suffix.lower() or ".png"
-    path = Path(vision.save_image(data, suffix=suffix))
+    try:
+        path = Path(vision.save_image(data))
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
     return {"path": str(path), "media_url": f"/media/{path.name}"}
 
 

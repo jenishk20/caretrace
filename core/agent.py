@@ -60,7 +60,7 @@ def prepare_input(input_kind: str, *, text: str | None = None,
     if input_kind in ("image", "document"):
         if not image_path:
             raise ValueError("image_path is required for image input")
-        return vision.ocr(image_path), "document"
+        return vision.ocr_bytes(Path(image_path).read_bytes()), "document"
     if input_kind == "text":
         if not (text or "").strip():
             raise ValueError("text is required for text input")

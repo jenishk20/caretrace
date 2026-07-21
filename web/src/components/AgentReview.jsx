@@ -28,7 +28,7 @@ export default function AgentReview({ bundle, onApprove, busy, result }) {
     <section className="review-grid">
       <div className="review-head">
         <div><div className="eyebrow">Human review required</div><h2>Draft bundle</h2></div>
-        <span className="pill">Nothing commits until you approve it</span>
+        <span className="pill">Facts/alerts recorded · actions need approval</span>
       </div>
       {(bundle.alerts || []).length > 0 && <div className="review-block critical-block"><h3>Guardian alerts</h3>{bundle.alerts.map((alert) => <GuardianAlert key={alert.id} alert={alert} />)}</div>}
       {bundle.note && <ReviewBlock title="Clinical note" checked={signNote} onChange={setSignNote} action="Sign note">

@@ -129,7 +129,20 @@ def test_billing_tool_drops_hallucinated_code_and_uses_curated_labels(patient, m
     assert result["rejected"] == [{"system": "ICD-10", "code": "FAKE.1", "reason": "not in curated tables"}]
 
 
-def test_correction_supersedes_matching_order_with_audit_edge(patient, monkeypatch):
+def test_billing_tool_rejects_evidence_not_in_documented_record(patient, monkeypatch):
+    ctx = agent.ToolContext(patient["id"], None, "round", "en")
+    ctx.artifacts["note"] = {"summary": "Chest pain improved."}
+    monkeypatch.setattr(agent.llm, "ask_json", lambda *args, **kwargs: {
+        "codes": [{"system": "ICD-10", "code": "I48.91", "evidence": "made up evidence"}]
+    })
+
+    result = agent.suggest_billing_codes(ctx)
+
+    assert result["codes"] == []
+    assert result["rejected"] == [{"system": "ICD-10", "code": "I48.91", "reason": "evidence not in documented record"}]
+
+
+def test_correction_stages_matching_order_without_superseding_before_approval(patient, monkeypatch):
     ekg = graph.add_node(patient["id"], "lab_order", "Repeat EKG", source_kind="round")
     ctx = agent.ToolContext(patient["id"], None, "correction", "en")
     ctx.last_facts = [{"ntype": "lab_order", "label": "EKG", "category": None,
@@ -138,9 +151,48 @@ def test_correction_supersedes_matching_order_with_audit_edge(patient, monkeypat
     result = agent.ingest_facts(ctx)
 
     updated = next(node for node in graph.nodes_for(patient["id"]) if node["id"] == ekg["id"])
-    assert updated["status"] == "superseded"
-    assert result["superseded_node_ids"] == [ekg["id"]]
+    assert updated["status"] == "active"
+    assert result["staged_cancellations"][0]["node_id"] == ekg["id"]
     assert any(edge["relation"] == "relates_to" and edge["dst_node_id"] == ekg["id"] for edge in graph.edges_for(patient["id"]))
+
+
+def test_partial_round_route_recovers_ingest_then_guardian(patient, monkeypatch):
+    turns = iter([tool_turn(("extract_note_and_facts", {})), complete_turn()])
+    monkeypatch.setattr(agent.llm, "ask_tools", lambda *args, **kwargs: next(turns))
+    monkeypatch.setattr(agent.graph, "structure_and_extract", lambda text: (
+        {"summary": "Ketorolac ordered", "chief_complaint": None, "medications": ["Ketorolac"],
+         "follow_ups": [], "emotional_tone": None},
+        [{"ntype": "medication", "label": "Ketorolac", "category": "nsaid",
+          "polarity": "asserted", "confidence": 1.0, "detail": None}],
+    ))
+    ctx = agent.ToolContext(patient["id"], None, "round", "en")
+
+    bundle = agent.run_agent(ctx, "Ketorolac ordered", "speech")
+
+    assert [event["tool"] for event in bundle["trace"]] == [
+        "extract_note_and_facts", "ingest_facts", "run_guardian"
+    ]
+    assert bundle["trace"][-1]["recovery"] is True
+
+
+def test_agent_persists_trace_before_the_next_model_turn(patient, monkeypatch):
+    encounter = repo.create_encounter(patient["id"], None, "round")
+    repo.create_agent_run(patient["id"], encounter["id"], "speech", "round", "en", "round")
+    calls = {"count": 0}
+
+    def fake_tools(*args, **kwargs):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            return tool_turn(("extract_note_and_facts", {}))
+        assert repo.get_agent_run(encounter["id"])["trace"][0]["tool"] == "extract_note_and_facts"
+        return complete_turn()
+
+    monkeypatch.setattr(agent.llm, "ask_tools", fake_tools)
+    monkeypatch.setattr(agent.graph, "structure_and_extract", lambda text: (
+        {"summary": text, "chief_complaint": None, "medications": [], "follow_ups": [], "emotional_tone": None}, []
+    ))
+
+    agent.run_agent(agent.ToolContext(patient["id"], encounter["id"], "round", "en"), "round", "speech")
 
 
 def test_approval_commits_only_selected_drafts(patient):
@@ -174,3 +226,47 @@ def test_approval_commits_only_selected_drafts(patient):
     assert repo.list_handoffs(patient["id"]) == []
     assert result["committed"]["codes"][0]["code"] == "I48.91"
     assert repo.get_agent_run(encounter["id"])["bundle"]["approval"]["codes"][0]["code"] == "I48.91"
+
+
+def test_approval_is_idempotent_and_rejects_non_draft_runs(patient):
+    encounter = repo.create_encounter(patient["id"], None, "round")
+    bundle = {"note": None, "codes": [], "handoff": {"situation": "draft"},
+              "patient_summary": "draft", "staged_orders": [], "alerts": [], "trace": []}
+    repo.create_agent_run(patient["id"], encounter["id"], "text", "round", "en", "round")
+    repo.update_agent_run(encounter["id"], bundle=bundle, status="draft")
+    approvals = {"sign_note": False, "codes": [], "handoff": True, "send_summary": True, "orders": {}}
+
+    first = agent.approve_run(patient["id"], encounter["id"], approvals)
+    second = agent.approve_run(patient["id"], encounter["id"], approvals)
+
+    assert first == second
+    assert len(repo.list_handoffs(patient["id"])) == 1
+    assert len(repo.list_documents(patient["id"], kind="patient_summary")) == 1
+
+    running = repo.create_encounter(patient["id"], None, "round")
+    repo.create_agent_run(patient["id"], running["id"], "text", "round", "en", "round")
+    try:
+        agent.approve_run(patient["id"], running["id"], approvals)
+    except ValueError as exc:
+        assert "not ready" in str(exc)
+    else:
+        raise AssertionError("running agent run should not be approvable")
+
+
+def test_order_cancellation_changes_record_only_after_explicit_approval(patient):
+    encounter = repo.create_encounter(patient["id"], None, "round")
+    ekg = graph.add_node(patient["id"], "lab_order", "Repeat EKG", source_kind="round")
+    bundle = {"note": None, "codes": [], "handoff": None, "patient_summary": None,
+              "staged_orders": [{"node_id": ekg["id"], "label": "Repeat EKG", "type": "lab_order",
+                                 "proposed_action": "cancel", "flagged": False}],
+              "alerts": [], "trace": []}
+    repo.create_agent_run(patient["id"], encounter["id"], "text", "correction", "en", "cancel the EKG")
+    repo.update_agent_run(encounter["id"], bundle=bundle, status="draft")
+
+    agent.approve_run(patient["id"], encounter["id"], {
+        "sign_note": False, "codes": [], "handoff": False, "send_summary": False,
+        "orders": {str(ekg["id"]): "cancel"},
+    })
+
+    updated = next(node for node in graph.nodes_for(patient["id"]) if node["id"] == ekg["id"])
+    assert updated["status"] == "superseded"

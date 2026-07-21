@@ -30,13 +30,13 @@ export { LAYERS, LABELS };
 
 export default function AgentWorkingPanel({ busy, inputKind, trace = [] }) {
   const completed = new Map(trace.map((event) => [event.tool, event.status]));
-  const tools = trace.length ? trace.map((event) => event.tool) : ROUTES[inputKind] || ROUTES.text;
+  const tools = trace.length ? trace.map((event) => event.tool) : (busy ? [] : ROUTES[inputKind] || ROUTES.text);
   return (
     <section className="card agent-working" aria-live="polite">
       <div className="row between">
         <div>
           <div className="eyebrow">Agent orchestration</div>
-          <h3>{busy ? "Working locally…" : trace.length ? "Run trace" : "Ready to route"}</h3>
+          <h3>{busy ? (trace.length ? "Working locally…" : "Starting local run…") : trace.length ? "Run trace" : "Route preview"}</h3>
         </div>
         <span className={`agent-state ${busy ? "running" : ""}`}>{busy ? "RUNNING" : "NETWORK OFF"}</span>
       </div>
@@ -52,6 +52,7 @@ export default function AgentWorkingPanel({ busy, inputKind, trace = [] }) {
             </div>
           );
         })}
+        {busy && tools.length === 0 && <span className="muted" style={{ fontSize: 12 }}>Waiting for the first recorded tool call…</span>}
       </div>
       <div className="layer-key">
         <span className="model">● model language</span>

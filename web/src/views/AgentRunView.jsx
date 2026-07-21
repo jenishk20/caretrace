@@ -24,6 +24,7 @@ export default function AgentRunView({ patient, pid, staff, refresh }) {
   const [approvalBusy, setApprovalBusy] = useState(false);
   const [approvalResult, setApprovalResult] = useState(null);
   const [recentRuns, setRecentRuns] = useState([]);
+  const [liveTrace, setLiveTrace] = useState([]);
   const recorderRef = useRef(null);
   const audioStreamRef = useRef(null);
   const videoRef = useRef(null);
@@ -36,6 +37,7 @@ export default function AgentRunView({ patient, pid, staff, refresh }) {
     setMode(next);
     setError("");
     setBundle(null);
+    setLiveTrace([]);
     setApprovalResult(null);
   }
 
@@ -129,8 +131,21 @@ export default function AgentRunView({ patient, pid, staff, refresh }) {
         if (!text.trim()) throw new Error(mode === "speech" ? "Record or enter the spoken round first." : "Enter a note or correction first.");
         payload.text = text.trim();
       }
-      const result = await api.runAgent(payload);
-      setBundle(result);
+      const started = await api.startAgent(payload);
+      const deadline = Date.now() + 8 * 60 * 1000;
+      let completed = null;
+      while (Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 700));
+        const current = await api.agentRun(started.encounter_id);
+        setLiveTrace(current.trace || []);
+        if (current.status === "draft" || current.status === "approved" || current.status === "failed") {
+          completed = current;
+          break;
+        }
+      }
+      if (!completed) throw new Error("The local agent timed out before completing the run.");
+      if (completed.status === "failed") throw new Error("The local agent could not complete this run.");
+      setBundle(completed.bundle);
       await Promise.all([refresh?.(), loadRecent()]);
     } catch (exc) { setError(exc.message); } finally { setBusy(false); }
   }
@@ -160,7 +175,7 @@ export default function AgentRunView({ patient, pid, staff, refresh }) {
           {error && <div className="capture-error">{error}</div>}
           <button className="btn btn-primary run-button" onClick={run} disabled={busy || recording}>{busy ? <><span className="spinner" /> Running local agent…</> : "Run →"}</button>
         </section>
-        <AgentWorkingPanel busy={busy} inputKind={mode} trace={bundle?.trace || []} />
+        <AgentWorkingPanel busy={busy} inputKind={mode} trace={bundle?.trace || liveTrace} />
       </div>
       {bundle && <div className="results-stack fade-up"><AgentReview bundle={bundle} onApprove={approve} busy={approvalBusy} result={approvalResult} /><TracePanel trace={bundle.trace} recentRuns={recentRuns} /></div>}
       {!bundle && recentRuns.length > 0 && <TracePanel trace={[]} recentRuns={recentRuns} />}

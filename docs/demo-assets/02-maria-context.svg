@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <rect width="1920" height="1080" fill="#071B2B"/>
+  <circle cx="1650" cy="170" r="330" fill="#1ED6B8" opacity=".09"/>
+  <text x="130" y="135" fill="#70F0D8" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="7">PATIENT CONTEXT</text>
+  <text x="130" y="260" fill="#F7FBFC" font-family="Inter, Arial, sans-serif" font-size="88" font-weight="750">This is María.</text>
+  <text x="130" y="330" fill="#A8C0C8" font-family="Inter, Arial, sans-serif" font-size="35">Before anyone enters the room, her care already has a story.</text>
+  <g transform="translate(130 430)">
+    <circle cx="105" cy="105" r="105" fill="#1C5667"/>
+    <circle cx="105" cy="73" r="34" fill="#FFB8A9"/>
+    <path d="M38 182c14-52 42-74 67-74s53 22 67 74" fill="#FF8D7B"/>
+    <text x="250" y="80" fill="#F7FBFC" font-family="Inter, Arial, sans-serif" font-size="64" font-weight="700">María R.</text>
+    <text x="250" y="132" fill="#A8C0C8" font-family="Inter, Arial, sans-serif" font-size="28">Synthetic demonstration patient</text>
+  </g>
+  <line x1="240" y1="760" x2="1680" y2="760" stroke="#376B7A" stroke-width="5" stroke-linecap="round"/>
+  <g font-family="Inter, Arial, sans-serif">
+    <circle cx="360" cy="760" r="21" fill="#70F0D8"/><text x="280" y="850" fill="#F7FBFC" font-size="32" font-weight="650">Atrial fibrillation</text><text x="320" y="892" fill="#A8C0C8" font-size="25">known condition</text>
+    <circle cx="720" cy="760" r="21" fill="#F7D878"/><text x="655" y="850" fill="#F7FBFC" font-size="32" font-weight="650">Warfarin</text><text x="638" y="892" fill="#A8C0C8" font-size="25">active medication</text>
+    <circle cx="1080" cy="760" r="21" fill="#FF8D7B"/><text x="961" y="850" fill="#F7FBFC" font-size="32" font-weight="650">Penicillin allergy</text><text x="980" y="892" fill="#A8C0C8" font-size="25">needs attention</text>
+    <circle cx="1440" cy="760" r="21" fill="#70F0D8"/><text x="1326" y="850" fill="#F7FBFC" font-size="32" font-weight="650">Repeat EKG</text><text x="1338" y="892" fill="#A8C0C8" font-size="25">open order</text>
+  </g>
+</svg>

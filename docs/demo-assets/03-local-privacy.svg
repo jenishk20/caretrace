@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <rect width="1920" height="1080" fill="#071B2B"/>
+  <text x="130" y="140" fill="#70F0D8" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="7">LOCAL BY DESIGN</text>
+  <text x="130" y="255" fill="#F7FBFC" font-family="Inter, Arial, sans-serif" font-size="68" font-weight="750">The patient story</text>
+  <text x="130" y="333" fill="#F7FBFC" font-family="Inter, Arial, sans-serif" font-size="68" font-weight="750">stays inside the</text>
+  <text x="130" y="411" fill="#F7FBFC" font-family="Inter, Arial, sans-serif" font-size="68" font-weight="750">care environment.</text>
+  <g transform="translate(1140 170)">
+    <rect width="560" height="620" rx="48" fill="#103447" stroke="#70F0D8" stroke-width="4"/>
+    <text x="280" y="76" text-anchor="middle" fill="#70F0D8" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="700" letter-spacing="4">HOSPITAL ENVIRONMENT</text>
+    <path d="M214 175h132v85h-35v106H249V260h-35z" fill="#70F0D8"/><rect x="273" y="195" width="15" height="57" fill="#103447"/><rect x="252" y="216" width="57" height="15" fill="#103447"/>
+    <rect x="92" y="420" width="166" height="99" rx="16" fill="#1C5667"/><rect x="302" y="420" width="166" height="99" rx="16" fill="#1C5667"/>
+    <text x="175" y="462" text-anchor="middle" fill="#F7FBFC" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="700">Patient context</text><text x="175" y="492" text-anchor="middle" fill="#A8C0C8" font-family="Inter, Arial, sans-serif" font-size="19">timeline + facts</text>
+    <text x="385" y="462" text-anchor="middle" fill="#F7FBFC" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="700">Local runtime</text><text x="385" y="492" text-anchor="middle" fill="#A8C0C8" font-family="Inter, Arial, sans-serif" font-size="19">gpt-oss-20b + OCR</text>
+    <line x1="258" y1="469" x2="302" y2="469" stroke="#70F0D8" stroke-width="4"/>
+  </g>
+  <g transform="translate(130 505)" font-family="Inter, Arial, sans-serif">
+    <circle cx="22" cy="15" r="10" fill="#70F0D8"/><text x="58" y="25" fill="#E8F0F2" font-size="38">Local inference</text>
+    <circle cx="22" cy="105" r="10" fill="#70F0D8"/><text x="58" y="115" fill="#E8F0F2" font-size="38">Local transcription and OCR</text>
+    <circle cx="22" cy="195" r="10" fill="#70F0D8"/><text x="58" y="205" fill="#E8F0F2" font-size="38">Clinician-controlled review</text>
+  </g>
+  <text x="130" y="930" fill="#A8C0C8" font-family="Inter, Arial, sans-serif" font-size="29">Privacy is not a deployment detail. It is part of the clinical experience.</text>
+</svg>

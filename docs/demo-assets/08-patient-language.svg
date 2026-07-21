@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <rect width="1920" height="1080" fill="#071B2B"/>
+  <circle cx="1480" cy="170" r="330" fill="#1ED6B8" opacity=".08"/>
+  <text x="130" y="140" fill="#70F0D8" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="7">PATIENT-FACING CLARITY</text>
+  <text x="130" y="255" fill="#F7FBFC" font-family="Inter, Arial, sans-serif" font-size="78" font-weight="750">Safer care should also be</text><text x="130" y="340" fill="#F7FBFC" font-family="Inter, Arial, sans-serif" font-size="78" font-weight="750">understandable care.</text>
+  <g transform="translate(130 470)" font-family="Inter, Arial, sans-serif">
+    <rect width="500" height="330" rx="32" fill="#15394C" stroke="#376B7A" stroke-width="2"/><circle cx="84" cy="82" r="42" fill="#1C5667"/><path d="M64 82h40M84 62v40" stroke="#70F0D8" stroke-width="5" stroke-linecap="round"/><text x="52" y="175" fill="#F7FBFC" font-size="44" font-weight="700">Qué cambió</text><text x="52" y="235" fill="#A8C0C8" font-size="28">Cambios confirmados</text><text x="52" y="272" fill="#A8C0C8" font-size="28">por su equipo de cuidado</text>
+    <rect x="565" width="500" height="330" rx="32" fill="#15394C" stroke="#376B7A" stroke-width="2"/><circle cx="649" cy="82" r="42" fill="#1C5667"/><path d="M628 84l15 15 28-34" fill="none" stroke="#70F0D8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><text x="617" y="175" fill="#F7FBFC" font-size="44" font-weight="700">Qué sigue</text><text x="617" y="235" fill="#A8C0C8" font-size="28">Próximos pasos claros</text><text x="617" y="272" fill="#A8C0C8" font-size="28">y confirmados</text>
+    <rect x="1130" width="500" height="330" rx="32" fill="#15394C" stroke="#376B7A" stroke-width="2"/><circle cx="1214" cy="82" r="42" fill="#1C5667"/><text x="1214" y="96" text-anchor="middle" fill="#70F0D8" font-size="55" font-weight="800">i</text><text x="1182" y="175" fill="#F7FBFC" font-size="44" font-weight="700">Por qué importa</text><text x="1182" y="235" fill="#A8C0C8" font-size="28">Información comprensible</text><text x="1182" y="272" fill="#A8C0C8" font-size="28">en su idioma</text>
+  </g>
+  <text x="130" y="945" fill="#A8C0C8" font-family="Inter, Arial, sans-serif" font-size="33">Clear. Confirmed. In Spanish.</text>
+</svg>

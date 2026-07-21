@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs><radialGradient id="halo"><stop stop-color="#1ED6B8" stop-opacity=".28"/><stop offset="1" stop-color="#1ED6B8" stop-opacity="0"/></radialGradient></defs>
+  <rect width="1920" height="1080" fill="#071B2B"/><circle cx="960" cy="510" r="520" fill="url(#halo)"/>
+  <g stroke="#70F0D8" stroke-width="4" opacity=".8"><line x1="465" y1="440" x2="820" y2="440"/><line x1="1100" y1="440" x2="1455" y2="440"/><line x1="960" y1="132" x2="960" y2="305"/><line x1="960" y1="575" x2="960" y2="700"/></g>
+  <g fill="#15394C" stroke="#70F0D8" stroke-width="3"><circle cx="430" cy="440" r="70"/><circle cx="1490" cy="440" r="70"/><circle cx="960" cy="95" r="70"/><circle cx="960" cy="740" r="70"/></g>
+  <g fill="#70F0D8" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle"><text x="430" y="446">ALLERGY</text><text x="1490" y="446">MEDICATION</text><text x="960" y="101">CONVERSATION</text><text x="960" y="746">ORDER</text></g>
+  <circle cx="960" cy="440" r="166" fill="#165149" stroke="#70F0D8" stroke-width="6"/><circle cx="960" cy="398" r="39" fill="#F7FBFC"/><path d="M883 540c16-67 48-95 77-95s61 28 77 95" fill="#F7FBFC"/>
+  <text x="960" y="920" text-anchor="middle" fill="#F7FBFC" font-family="Inter, Arial, sans-serif" font-size="74" font-weight="750">MedSignal</text>
+  <text x="960" y="988" text-anchor="middle" fill="#A8C0C8" font-family="Inter, Arial, sans-serif" font-size="34">The patient story, connected in time.</text>
+</svg>

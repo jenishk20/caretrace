@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <rect width="1920" height="1080" fill="#071B2B"/>
+  <text x="130" y="140" fill="#70F0D8" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="7">RESPONSIBLE CLINICAL AI</text>
+  <text x="130" y="255" fill="#F7FBFC" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="750">Powerful AI. Clear boundaries.</text>
+  <g transform="translate(130 405)" font-family="Inter, Arial, sans-serif">
+    <rect width="485" height="355" rx="34" fill="#15394C" stroke="#376B7A" stroke-width="2"/><circle cx="242" cy="92" r="48" fill="#1C5667"/><path d="M220 104c16-50 28-50 44 0M222 76h40" fill="none" stroke="#70F0D8" stroke-width="6" stroke-linecap="round"/><text x="242" y="198" text-anchor="middle" fill="#F7FBFC" font-size="45" font-weight="700">AI drafts</text><text x="242" y="255" text-anchor="middle" fill="#A8C0C8" font-size="27">gpt-oss-20b connects</text><text x="242" y="292" text-anchor="middle" fill="#A8C0C8" font-size="27">context and evidence</text>
+    <path d="M525 177h160" stroke="#70F0D8" stroke-width="7"/><path d="M663 157l36 20-36 20" fill="#70F0D8"/>
+    <rect x="730" width="485" height="355" rx="34" fill="#15394C" stroke="#376B7A" stroke-width="2"/><path d="M972 42l51 21v50c0 52-33 86-51 95-18-9-51-43-51-95V63z" fill="#1C5667" stroke="#70F0D8" stroke-width="5"/><path d="M950 120l17 17 31-37" fill="none" stroke="#70F0D8" stroke-width="6" stroke-linecap="round"/><text x="972" y="255" text-anchor="middle" fill="#F7FBFC" font-size="45" font-weight="700">Rules check</text><text x="972" y="312" text-anchor="middle" fill="#A8C0C8" font-size="27">deterministic safeguards</text>
+    <path d="M1125 177h160" stroke="#70F0D8" stroke-width="7"/><path d="M1263 157l36 20-36 20" fill="#70F0D8"/>
+    <rect x="1330" width="460" height="355" rx="34" fill="#165149" stroke="#70F0D8" stroke-width="2"/><circle cx="1560" cy="105" r="48" fill="#70F0D8"/><path d="M1536 105h48M1560 81v48" stroke="#165149" stroke-width="7" stroke-linecap="round"/><text x="1560" y="255" text-anchor="middle" fill="#F7FBFC" font-size="45" font-weight="700">Clinician approves</text><text x="1560" y="312" text-anchor="middle" fill="#C6F8EE" font-size="27">final clinical judgment</text>
+  </g>
+  <text x="960" y="925" text-anchor="middle" fill="#F7FBFC" font-family="Inter, Arial, sans-serif" font-size="48" font-weight="650">Decision support — not autonomous diagnosis or prescribing.</text>
+</svg>

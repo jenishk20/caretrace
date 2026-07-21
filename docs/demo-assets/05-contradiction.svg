@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <rect width="1920" height="1080" fill="#071B2B"/>
+  <text x="130" y="140" fill="#F7D878" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="7">REQUIRES CLINICIAN REVIEW</text>
+  <text x="130" y="255" fill="#F7FBFC" font-family="Inter, Arial, sans-serif" font-size="80" font-weight="750">A contradiction is a signal.</text>
+  <text x="130" y="330" fill="#A8C0C8" font-family="Inter, Arial, sans-serif" font-size="34">Not an automated conclusion.</text>
+  <g transform="translate(130 455)" font-family="Inter, Arial, sans-serif">
+    <rect width="670" height="280" rx="30" fill="#15394C" stroke="#376B7A" stroke-width="2"/>
+    <text x="48" y="75" fill="#70F0D8" font-size="25" font-weight="700" letter-spacing="3">LIVE CONVERSATION</text>
+    <text x="48" y="165" fill="#F7FBFC" font-size="47" font-weight="650">“I’m not taking any</text><text x="48" y="225" fill="#F7FBFC" font-size="47" font-weight="650">blood thinners.”</text>
+    <rect x="1020" width="670" height="280" rx="30" fill="#15394C" stroke="#376B7A" stroke-width="2"/>
+    <text x="1068" y="75" fill="#FFB8A9" font-size="25" font-weight="700" letter-spacing="3">PATIENT RECORD</text>
+    <text x="1068" y="168" fill="#F7FBFC" font-size="52" font-weight="700">Warfarin</text><text x="1068" y="220" fill="#A8C0C8" font-size="30">Active medication</text>
+    <line x1="720" y1="140" x2="970" y2="140" stroke="#F7D878" stroke-width="7"/><circle cx="845" cy="140" r="66" fill="#F7D878"/><text x="845" y="158" text-anchor="middle" fill="#071B2B" font-size="66" font-weight="800">!</text>
+  </g>
+  <g transform="translate(495 845)"><rect width="930" height="100" rx="50" fill="#4C4020" stroke="#F7D878" stroke-width="2"/><text x="465" y="64" text-anchor="middle" fill="#FFF3C8" font-family="Inter, Arial, sans-serif" font-size="35" font-weight="700">AI surfaces the evidence. Clinicians verify the truth.</text></g>
+</svg>

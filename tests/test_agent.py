@@ -173,3 +173,4 @@ def test_approval_commits_only_selected_drafts(patient):
     assert [item["code"] for item in repo.list_billing_codes(patient["id"])] == ["I48.91"]
     assert repo.list_handoffs(patient["id"]) == []
     assert result["committed"]["codes"][0]["code"] == "I48.91"
+    assert repo.get_agent_run(encounter["id"])["bundle"]["approval"]["codes"][0]["code"] == "I48.91"

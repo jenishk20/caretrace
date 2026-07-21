@@ -53,6 +53,21 @@ def test_image_upload_returns_local_path(patient, monkeypatch, tmp_path):
     assert response.json() == {"path": str(saved), "media_url": f"/media/{saved.name}"}
 
 
+def test_run_rejects_image_paths_outside_local_media(patient, monkeypatch, tmp_path):
+    outside = tmp_path / "outside.png"
+    outside.write_bytes(b"not a real image")
+    called = {"ocr": False}
+    monkeypatch.setattr(core_agent.vision, "ocr", lambda path: called.update(ocr=True))
+    client = TestClient(application.app)
+
+    response = client.post("/api/agent/run", json={
+        "patient_id": patient["id"], "input_kind": "image", "image_path": str(outside),
+    })
+
+    assert response.status_code == 422
+    assert called["ocr"] is False
+
+
 def test_trace_recent_runs_and_roi_are_exposed(patient):
     encounter = repo.create_encounter(patient["id"], None, "round")
     repo.create_agent_run(patient["id"], encounter["id"], "text", "round", "en", "round")

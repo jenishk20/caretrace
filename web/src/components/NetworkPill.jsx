@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 
-// The literal proof-of-offline indicator. Turn Wi-Fi off and it flips to
-// "NETWORK OFF" while everything keeps working — Gemma still reachable locally.
+// Confide's runtime network mode. The backend never probes an external host;
+// local Ollama remains reachable while external runtime networking is disabled.
 export default function NetworkPill() {
   const [st, setSt] = useState(null);
 
@@ -23,7 +23,7 @@ export default function NetworkPill() {
     <div className="row" style={{ gap: 8 }}>
       <span
         className="pill"
-        title="Best-effort probe of an external host"
+        title="External runtime networking is disabled; no external host is probed"
         style={{
           borderColor: off ? "var(--teal-dim)" : "var(--line)",
           color: off ? "var(--teal)" : "var(--text-mute)",

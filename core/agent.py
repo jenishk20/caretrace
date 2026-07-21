@@ -377,7 +377,8 @@ def approve_run(patient_id: int, encounter_id: int, approvals: dict) -> dict:
                 node_ids = []
             if node_id in node_ids:
                 guardian.update_alert(alert["id"], "acknowledged")
-    repo.update_agent_run(encounter_id, status="approved", approved=True)
+    bundle["approval"] = committed
+    repo.update_agent_run(encounter_id, bundle=bundle, status="approved", approved=True)
     return {"encounter_id": encounter_id, "committed": committed}
 
 

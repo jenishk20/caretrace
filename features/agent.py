@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from core import agent as core_agent
 from core import repo, vision
+from core.config import MEDIA_DIR
 
 router = APIRouter(tags=["agent"])
 
@@ -29,6 +30,19 @@ class ApprovalRequest(BaseModel):
     approvals: dict[str, Any]
 
 
+def _media_path(raw_path: str | None, field_name: str) -> str | None:
+    if not raw_path:
+        return None
+    resolved = Path(raw_path).resolve()
+    try:
+        resolved.relative_to(MEDIA_DIR.resolve())
+    except ValueError as exc:
+        raise HTTPException(422, f"{field_name} must reference a server-owned media upload") from exc
+    if not resolved.is_file():
+        raise HTTPException(422, f"{field_name} does not exist")
+    return str(resolved)
+
+
 @router.post("/api/agent/run")
 def run(body: AgentRunRequest):
     patient = repo.get_patient(body.patient_id)
@@ -36,12 +50,14 @@ def run(body: AgentRunRequest):
         raise HTTPException(404, "Patient not found")
     if body.staff_id is not None and not repo.get_staff(body.staff_id):
         raise HTTPException(404, "Staff not found")
+    audio_path = _media_path(body.audio_path, "audio_path")
+    image_path = _media_path(body.image_path, "image_path")
     try:
         text, normalized_kind = core_agent.prepare_input(
             body.input_kind,
             text=body.text,
-            audio_path=body.audio_path,
-            image_path=body.image_path,
+            audio_path=audio_path,
+            image_path=image_path,
         )
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
